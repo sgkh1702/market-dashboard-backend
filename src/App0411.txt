@@ -1,0 +1,494 @@
+import React, { useState, useEffect } from "react";
+import { Container, Tabs, Tab, Typography, Box, Paper, CircularProgress, Grid } from "@mui/material";
+import SectorStockDropdown from "./SectorStockDropdown";
+import FnoPulseBarChart from './FnoPulseBarChart';
+
+const SHEET_ID = "1t_AAtFwWPnqeNoVwDFbV8rtCIEXwQ8e3kLFHoRSlre0";
+const API_KEY = "AIzaSyB26mEZ7Lh-eS0npTPiGgT9r9hwdthUJQ0";
+
+function useSheetRange(sheetName, range) {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetName}!${range}?key=${API_KEY}`)
+      .then(res => res.json())
+      .then(res => setData(res.values || []))
+      .catch(() => setData([]));
+  }, [sheetName, range]);
+  return data;
+}
+
+function StockTicker() {
+  const [prices, setPrices] = useState([]);
+  useEffect(() => {
+    const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Ticker!A2:C100?key=${API_KEY}`;
+    const fetchPrices = async () => {
+      try {
+        const res = await fetch(apiUrl);
+        const json = await res.json();
+        const rows = (json.values || []).filter(r => r[0] && r[1] && r[2]);
+        setPrices(rows);
+      } catch {
+        setPrices([]);
+      }
+    };
+    fetchPrices();
+    const timer = setInterval(fetchPrices, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const scrollSecs = Math.max(30, prices.length * 7);
+
+  return (
+    <div
+      className="ticker-outer"
+      style={{
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        background: "#f4f7fa",
+        borderTop: "1px solid #d7dde8",
+        borderBottom: "1px solid #d7dde8",
+        minHeight: "36px",
+        cursor: "pointer"
+      }}
+    >
+      <div
+        className="ticker-inner"
+        style={{
+          display: "inline-block",
+          animation: `ticker-scroll ${scrollSecs}s linear infinite`,
+          animationDelay: "5s"
+        }}
+      >
+        {prices.length > 0 ? prices.map(([symbol, cmp, prevClose], i) => {
+          const cmpNum = Number(cmp.replace(/,/g, '').trim());
+          const prevNum = Number(prevClose.replace(/,/g, '').trim());
+          const cmpColor = cmpNum > prevNum ? "green" : cmpNum < prevNum ? "red" : "black";
+
+          return (
+            <span key={symbol + i} style={{ marginRight: 52, fontSize: 17, fontWeight: 600, color: "#225" }}>
+              {symbol}: <span style={{ color: cmpColor }}>{cmp}</span>
+            </span>
+          );
+        }) : <span style={{ color: "gray" }}>NO DATA FOUND</span>}
+      </div>
+      <style>
+        {`
+          @keyframes ticker-scroll {
+            0% { transform: translateX(110%); }
+            10% { transform: translateX(110%); }
+            90% { transform: translateX(-110%); }
+            100% { transform: translateX(-110%); }
+          }
+          .ticker-outer:hover .ticker-inner {
+            animation-play-state: paused !important;
+          }
+        `}
+      </style>
+    </div>
+  );
+}
+
+function ProfessionalTable({ title, headers, rows, fullWidth = false }) {
+  const cleanedRows =
+    Array.isArray(rows)
+      ? rows.filter(row =>
+        Array.isArray(row) &&
+        row.length === headers.length &&
+        row.some(cell => cell && cell !== "#N/A" && (typeof cell !== "string" || cell.trim() !== ""))
+      )
+      : [];
+  if (!headers || !Array.isArray(headers)) return null;
+  return (
+    <Paper
+      elevation={2}
+      sx={{
+        mb: 3,
+        p: 2,
+        overflowX: "auto",
+        ...(fullWidth ? { width: "100%" } : { minWidth: 225, maxWidth: 310 })
+      }}
+    >
+      <Typography align="center" sx={{ fontWeight: "bold", bgcolor: "#e0e8f8", mb: 1 }}>
+        {title}
+      </Typography>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            {headers.map((header, i) => (
+              <th key={i} style={{ background: "#1869c8", color: "white", padding: "5px", fontWeight: 400 }}>
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {cleanedRows.map((row, i) => (
+            <tr key={i}>
+              {row.map((cell, j) => (
+                <td
+                  key={j}
+                  style={{
+                    padding: "4px",
+                    textAlign: j === 0 ? "left" : "right",
+                    color:
+                      headers[j] &&
+                        headers[j].toLowerCase().includes("change") &&
+                        !isNaN(Number(cell)) &&
+                        Number(cell) > 0
+                        ? "green"
+                        : headers[j] &&
+                          headers[j].toLowerCase().includes("change") &&
+                          !isNaN(Number(cell)) &&
+                          Number(cell) < 0
+                        ? "red"
+                        : "#222"
+                  }}
+                >
+                  {j === 0 ? (
+                    <a
+                      href={`https://in.tradingview.com/chart/OrMYkn6z/?symbol=NSE%3A${cell}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#1869c8", textDecoration: "underline" }}
+                    >
+                      {cell === "#N/A" ? "" : cell}
+                    </a>
+                  ) : (
+                    cell === "#N/A" ? "" : cell
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Paper>
+  );
+}
+
+function ScannerSubTabHighLow() {
+  const openLow = useSheetRange("Copy", "B4:E19");
+  const openHigh = useSheetRange("Copy", "G4:J19");
+  if (!openLow || !openHigh) return <CircularProgress />;
+  return (
+    <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "center" }}>
+      <ProfessionalTable title="Open = Low" headers={openLow[0]} rows={openLow.slice(1)} />
+      <ProfessionalTable title="Open = High" headers={openHigh[0]} rows={openHigh.slice(1)} />
+    </Box>
+  );
+}
+
+function ScannerSubTabBtstStbt() {
+  const btst = useSheetRange("Dashboard", "C82:F97");
+  const stbt = useSheetRange("Copy", "G23:J38");
+  if (!btst || !stbt) return <CircularProgress />;
+  return (
+    <Box sx={{ display: "flex", gap: 3, justifyContent: "center", flexWrap: "wrap" }}>
+      <ProfessionalTable title="BTST - Closing Near High" headers={btst[0]} rows={btst.slice(1)} />
+      <ProfessionalTable title="STBT - Closing Near Low" headers={stbt[0]} rows={stbt.slice(1)} />
+    </Box>
+  );
+}
+
+function ScannerSubTab52WHighLow() {
+  const high52W = useSheetRange("Copy", "B88:E108");
+  const low52W = useSheetRange("Copy", "G88:J108");
+  if (!high52W || !low52W) return <CircularProgress />;
+  return (
+    <Box sx={{ display: "flex", gap: 3, justifyContent: "center", flexWrap: "wrap" }}>
+      <ProfessionalTable title="Stocks Near 52 Week Low" headers={high52W[0]} rows={high52W.slice(1)} />
+      <ProfessionalTable title="Stocks Near 52 Week High" headers={low52W[0]} rows={low52W.slice(1)} />
+    </Box>
+  );
+}
+
+function ScannerSubTabCrossovers() {
+  const sma20_50_bullish = useSheetRange("Copy", "B42:E47");
+  const sma20_50_bearish = useSheetRange("Copy", "B51:E56");
+  const sma50_200_bullish = useSheetRange("Copy", "G42:J47");
+  const sma50_200_bearish = useSheetRange("Copy", "G51:J56");
+  if (!sma20_50_bullish || !sma20_50_bearish || !sma50_200_bullish || !sma50_200_bearish) return <CircularProgress />;
+  return (
+    <Grid container spacing={2} justifyContent="center" alignItems="flex-start">
+      <Grid item xs={12} md={6}>
+        <ProfessionalTable title="20/50 SMA Crossover Bullish" headers={sma20_50_bullish[0]} rows={sma20_50_bullish.slice(1)} />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <ProfessionalTable title="50/200 SMA Crossover Bullish" headers={sma50_200_bullish[0]} rows={sma50_200_bullish.slice(1)} />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <ProfessionalTable title="20/50 SMA Crossover Bearish" headers={sma20_50_bearish[0]} rows={sma20_50_bearish.slice(1)} />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <ProfessionalTable title="50/200 SMA Crossover Bearish" headers={sma50_200_bearish[0]} rows={sma50_200_bearish.slice(1)} />
+      </Grid>
+    </Grid>
+  );
+}
+
+function ScannerSubTabCandlestick() {
+  const darkCloud = useSheetRange("Copy", "B62:D82");
+  const piercing = useSheetRange("Copy", "G62:I82");
+  const bullishEngulfing = useSheetRange("Copy", "L62:N82");
+  const bearishEngulfing = useSheetRange("Copy", "P62:R82");
+  if (!darkCloud || !piercing || !bullishEngulfing || !bearishEngulfing) return <CircularProgress />;
+  return (
+    <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "center" }}>
+      <ProfessionalTable title="Dark Cloud" headers={darkCloud[0]} rows={darkCloud.slice(1)} />
+      <ProfessionalTable title="Piercing Pattern" headers={piercing[0]} rows={piercing.slice(1)} />
+      <ProfessionalTable title="Bullish Engulfing" headers={bullishEngulfing[0]} rows={bullishEngulfing.slice(1)} />
+      <ProfessionalTable title="Bearish Engulfing" headers={bearishEngulfing[0]} rows={bearishEngulfing.slice(1)} />
+    </Box>
+  );
+}
+
+function ScannerTab() {
+  const [scannerSubTab, setScannerSubTab] = useState(0);
+  return (
+    <Box sx={{ width: "100%", my: 2 }}>
+      <Tabs value={scannerSubTab} onChange={(e, val) => setScannerSubTab(val)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
+        <Tab label="High / Low" />
+        <Tab label="BTST / STBT" />
+        <Tab label="52 Week High / Low" />
+        <Tab label="Crossovers" />
+        <Tab label="Candlestick Patterns" />
+      </Tabs>
+      {scannerSubTab === 0 && <ScannerSubTabHighLow />}
+      {scannerSubTab === 1 && <ScannerSubTabBtstStbt />}
+      {scannerSubTab === 2 && <ScannerSubTab52WHighLow />}
+      {scannerSubTab === 3 && <ScannerSubTabCrossovers />}
+      {scannerSubTab === 4 && <ScannerSubTabCandlestick />}
+    </Box>
+  );
+}
+
+function GlobalMarketTab() {
+  const broaderData = useSheetRange("Dashboard", "C6:F10");
+  const sectorialData = useSheetRange("Dashboard", "H6:K19");
+  const usMarketData = useSheetRange("Dashboard", "M6:P9");
+  const asianMarketData = useSheetRange("Dashboard", "M13:P16");
+
+  if (!broaderData || !sectorialData || !usMarketData || !asianMarketData) return <CircularProgress />;
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+      <ProfessionalTable title="Broader Indices" headers={broaderData[0]} rows={broaderData.slice(1)} />
+      <ProfessionalTable title="Sectorial Indices" headers={sectorialData[0]} rows={sectorialData.slice(1)} />
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <ProfessionalTable title="US Markets" headers={usMarketData[0]} rows={usMarketData.slice(1)} />
+        <ProfessionalTable title="Asian Markets" headers={asianMarketData[0]} rows={asianMarketData.slice(1)} />
+      </Box>
+    </Box>
+  );
+}
+
+function MarketMoversTab() {
+  const gainers = useSheetRange("Dashboard", "C25:F40");
+  const losers = useSheetRange("Dashboard", "H25:K40");
+
+  if (!gainers || !losers) return <CircularProgress />;
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      <ProfessionalTable title="Top Gainers" headers={gainers[0]} rows={gainers.slice(1)} />
+      <ProfessionalTable title="Top Losers" headers={losers[0]} rows={losers.slice(1)} />
+    </Box>
+  );
+}
+
+function FNOPulseTab() {
+  const timestampData = useSheetRange("Buildup", "B1");
+  const fallbackTimestampData = useSheetRange("Buildup", "B2");
+  const timestampValue =
+    (timestampData && timestampData[0]?.[0]) ||
+    (fallbackTimestampData && fallbackTimestampData[0]?.[0]) || "-";
+
+  const longBuildup = useSheetRange("Buildup", "A3:D13");
+  const shortCovering = useSheetRange("Buildup", "A17:D27");
+  const longUnwinding = useSheetRange("Buildup", "E3:H13");
+  const shortBuildup = useSheetRange("Buildup", "E17:H27");
+  const maxOIChange = useSheetRange("Buildup", "I3:L13");
+function sumColumn(arr, colIdx) {
+  if (!Array.isArray(arr) || arr.length < 2) return 0;
+  // skip header row, sum colIdx
+  return arr.slice(1).reduce((acc, row) => acc + (parseFloat(row[colIdx]) || 0), 0);
+}
+
+const fnoPulseBarData = [
+  { label: "Long Buildup", oiChange: sumColumn(longBuildup, 1) },       // Usually col 1 = % OI Change
+  { label: "Short Covering", oiChange: sumColumn(shortCovering, 1) },
+  { label: "Long Unwinding", oiChange: sumColumn(longUnwinding, 1) },
+  { label: "Short Buildup", oiChange: sumColumn(shortBuildup, 1) },
+];
+
+  if (!longBuildup || !shortCovering || !longUnwinding || !shortBuildup || !maxOIChange) return <CircularProgress />;
+
+  const tb = (data, title) => <ProfessionalTable title={title} headers={data[0]} rows={data.slice(1)} />;
+<FnoPulseBarChart data={fnoPulseBarData} />
+  return (
+    <Box sx={{ minWidth: "1000px" }}>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 1 }}>Timestamp:</Typography>
+        <Typography variant="subtitle1">{timestampValue}</Typography>
+      </Box>
+      <Box sx={{ display: "flex", flexWrap: "nowrap", gap: 3, mb: 3 }}>
+        <Box sx={{ minWidth: 320 }}>
+          {tb(longBuildup, "Long Buildup")}
+          {tb(shortCovering, "Short Covering")}
+        </Box>
+        <Box sx={{ minWidth: 350 }}>
+          {tb(longUnwinding, "Long Unwinding")}
+          {tb(shortBuildup, "Short Buildup")}
+        </Box>
+        <Box sx={{ minWidth: 350 }}>{tb(maxOIChange, "Max OI Change (5 min)")}</Box>
+      </Box>
+    </Box>
+  );
+}
+
+function SectorStockAnalysisTab() {
+  const [tab, setTab] = useState(0);
+  const rsData = useSheetRange("Copy", "L2:T15");
+  useEffect(() => {
+    if (rsData) {
+      rsData.forEach((row, idx) => {
+        console.log(`Row ${idx}:`, row);
+      });
+    } else {
+      console.log("No rsData yet");
+    }
+  }, [rsData]);
+
+  let sortedRows = [];
+  let headers = [];
+  if (rsData && rsData.length > 1) {
+    headers = rsData[0];
+    const allRows = rsData.slice(1);
+    const rankIndex = headers.findIndex(col => col.toLowerCase() === "rank");
+    sortedRows =
+      rankIndex === -1
+        ? allRows
+        : [...allRows].sort((a, b) => {
+            const rankA = Number(a[rankIndex]) || 9999;
+            const rankB = Number(b[rankIndex]) || 9999;
+            return rankA - rankB;
+          });
+  }
+
+  return (
+    <Box sx={{ width: "100%" }}>
+      <Tabs value={tab} onChange={(e, val) => setTab(val)} centered>
+        <Tab label="Sector" />
+        <Tab label="Stock" />
+      </Tabs>
+      <Box hidden={tab !== 0} sx={{ mt: 2 }}>
+        {!rsData ? (
+          <CircularProgress />
+        ) : (
+          <ProfessionalTable title="Sector RS (Sorted by Rank)" headers={headers} rows={sortedRows} fullWidth />
+        )}
+      </Box>
+      <Box hidden={tab !== 1} sx={{ mt: 2 }}>
+        <Box hidden={tab !== 1} sx={{ mt: 2 }}>
+          <SectorStockDropdown />
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function StockResearchTab() {
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Stock Research (Planned Feature)
+      </Typography>
+      <Typography>This feature is under development and will be added soon.</Typography>
+    </Box>
+  );
+}
+
+function MarketSummarySingleLine({ nifty, banknifty, sensex, indiavix, usdinr }) {
+  const blocks = [
+    { label: "Nifty", data: nifty },
+    { label: "Bank Nifty", data: banknifty },
+    { label: "Sensex", data: sensex },
+    { label: "IndiaVIX", data: indiavix },
+    { label: "USDINR", data: usdinr }
+  ];
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", ml: 6, gap: 6, flexWrap: "nowrap" }}>
+      {blocks.map(({ label, data }, idx) => {
+        if (!data || data.length < 3) return null;
+        const value = Number(data[1]) ? Number(data[1]).toFixed(2) : data[1];
+        const change = Number(data[2]) ? Number(data[2]).toFixed(2) : data[2];
+        const changeNum = parseFloat(change);
+        const changeColor = changeNum > 0 ? "green" : changeNum < 0 ? "red" : "black";
+        return (
+          <Box key={idx} sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}>
+            <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", mr: 0.7 }}>
+              {label}
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 700, mr: 0.5 }}>
+              {value}
+            </Typography>
+            <Typography variant="body2" sx={{ color: changeColor, fontWeight: 700 }}>
+              {change}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+export default function App() {
+  const [value, setValue] = useState(0);
+  const nifty = useSheetRange("Dashboard", "C2:E2");
+  const banknifty = useSheetRange("Dashboard", "H2:J2");
+  const sensex = useSheetRange("Dashboard", "M2:O2");
+  const indiavix = useSheetRange("Dashboard", "C15:E15");
+  const usdinr = useSheetRange("Dashboard", "C14:E14");
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 3, flexWrap: "nowrap" }}>
+        <Typography variant="h4" sx={{ whiteSpace: "nowrap" }}>
+          Market Dashboard
+        </Typography>
+        <StockTicker />
+      </Box>
+
+      <MarketSummarySingleLine nifty={nifty && nifty[0]} banknifty={banknifty && banknifty[0]} sensex={sensex && sensex[0]} indiavix={indiavix && indiavix[0]} usdinr={usdinr && usdinr[0]} />
+
+      <Box sx={{ bgcolor: "background.paper", borderRadius: 2, mt: 3 }}>
+        <Tabs value={value} onChange={(e, val) => setValue(val)} centered variant="fullWidth">
+          <Tab label="Global Market" />
+          <Tab label="Market Movers" />
+          <Tab label="Scanners" />
+          <Tab label="FNO Pulse" />
+          <Tab label="Sector/Stock Analysis" />
+          <Tab label="Stock Research" />
+        </Tabs>
+
+        <Box role="tabpanel" hidden={value !== 0} sx={{ p: 2, minHeight: 350 }}>
+          {value === 0 && <GlobalMarketTab />}
+        </Box>
+        <Box role="tabpanel" hidden={value !== 1} sx={{ p: 2, minHeight: 350 }}>
+          {value === 1 && <MarketMoversTab />}
+        </Box>
+        <Box role="tabpanel" hidden={value !== 2} sx={{ p: 2, minHeight: 350 }}>
+          {value === 2 && <ScannerTab />}
+        </Box>
+        <Box role="tabpanel" hidden={value !== 3} sx={{ p: 2, minHeight: 350 }}>
+          {value === 3 && <FNOPulseTab />}
+        </Box>
+        <Box role="tabpanel" hidden={value !== 4} sx={{ p: 2, minHeight: 350 }}>
+          {value === 4 && <SectorStockAnalysisTab />}
+        </Box>
+        <Box role="tabpanel" hidden={value !== 5} sx={{ p: 2, minHeight: 350 }}>
+          {value === 5 && <StockResearchTab />}
+        </Box>
+      </Box>
+    </Container>
+  );
+}

@@ -1,0 +1,57 @@
+html {
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #fff;
+  color: #222;
+  line-height: 1.5;
+}
+
+a {
+  color: #2376c5;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ticker-outer {
+  background: #f8fafc;
+  border-top: 1px solid #d7dde8;
+  border-bottom: 1px solid #d7dde8;
+  min-height: 32px;
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.ticker-inner {
+  display: inline-block;
+  animation: ticker-scroll 60s linear infinite;
+  padding-left: 100%;
+}
+.ticker-outer:hover .ticker-inner {
+  animation-play-state: paused !important;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.table-compact {
+  font-size: 0.95rem;
+}
