@@ -3,5 +3,3 @@ uvicorn==0.31.1
 nsepy==0.8
 pandas==2.2.3
 numpy==1.26.4
-requests==2.32.3
-python-multipart==0.0.9
