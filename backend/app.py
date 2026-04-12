@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import uvicorn
-import yfinance as yf
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
