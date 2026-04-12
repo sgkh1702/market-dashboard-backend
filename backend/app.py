@@ -3,17 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"], 
-    allow_headers=["*"]
-)
-
-@app.get("/")
-async def home():
-    return {"message": "✅ NSE Backend LIVE"}
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 stocks = {
     "RELIANCE": {"price": 2850, "rsi": 45, "score": 8},
@@ -21,6 +11,15 @@ stocks = {
     "INFY": {"price": 1850, "rsi": 49, "score": 7},
     "HDFCBANK": {"price": 1625, "rsi": 41, "score": 9}
 }
+
+@app.get("/")
+async def home():
+    return {"message": "✅ NSE Backend LIVE"}
+
+@app.get("/search-symbols")
+async def search_symbols(q: str):
+    matches = [s for s in stocks.keys() if q.upper() in s]
+    return {"symbols": matches}
 
 @app.get("/analyze/{symbol}")
 async def analyze(symbol: str):
