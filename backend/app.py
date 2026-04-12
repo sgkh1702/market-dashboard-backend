@@ -1,154 +1,159 @@
-
-import os
-import time
-import requests
-from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-import yfinance as yf
-import pandas as pd
-import numpy as np
 import json
+from pathlib import Path
 
-app = FastAPI()
+import uvicorn
+import yfinance as yf
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="Market Dashboard API")
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://mymarketdashboard.netlify.app",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-def safe_float(value):
+BASE_DIR = Path(__file__).resolve().parent
+NIFTY_FILE = BASE_DIR / "Nifty500List.json"
+
+try:
+    with open(NIFTY_FILE, "r", encoding="utf-8") as f:
+        NIFTY_500 = json.load(f)
+    print(f"Loaded Nifty500List.json: {len(NIFTY_500)} companies")
+except Exception as e:
+    print(f"Error loading Nifty500List.json: {e}")
+    NIFTY_500 = []
+
+
+def safe_round(value, digits=2):
     try:
-        return float(value) if value is not None else None
-    except (ValueError, TypeError):
+        if value is None:
+            return None
+        return round(float(value), digits)
+    except Exception:
         return None
 
-def calc_yoy_growth(series):
-    if series is None or len(series) < 2:
+
+def extract_symbol(row):
+    if not isinstance(row, dict):
         return None
-    try:
-        current = series.iloc[0]
-        previous = series.iloc[1]
-        return ((current - previous) / previous * 100) if previous != 0 else None
-    except:
-        return None
+    return (
+        row.get("Symbol")
+        or row.get("symbol")
+        or row.get("SYMBOL")
+        or row.get("ticker")
+        or row.get("Ticker")
+    )
 
-def safe_yfinance_fetch(symbol: str, max_retries: int = 3) -> Optional[Dict[str, Any]]:
-    """Safe yfinance fetch with retry and custom headers"""
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    })
 
-    for attempt in range(max_retries):
-        try:
-            ticker = yf.Ticker(symbol, session=session)
-            info = ticker.info
-            if not info:
-                time.sleep(2 ** attempt)  # exponential backoff
-                continue
+def extract_name(row):
+    if not isinstance(row, dict):
+        return ""
+    return (
+        row.get("Company Name")
+        or row.get("companyName")
+        or row.get("company_name")
+        or row.get("NAME OF COMPANY")
+        or row.get("name")
+        or ""
+    )
 
-            # Get yearly income statement
-            income_yearly = ticker.get_income_stmt(freq="yearly")
-            revenue_growth_yoy = None
-            earnings_growth_yoy = None
-
-            if income_yearly is not None and not income_yearly.empty:
-                revenue_series = income_yearly.loc['Total Revenue'] if 'Total Revenue' in income_yearly.index else None
-                net_income_series = income_yearly.loc['Net Income'] if 'Net Income' in income_yearly.index else None
-
-                revenue_growth_yoy = calc_yoy_growth(revenue_series)
-                earnings_growth_yoy = calc_yoy_growth(net_income_series)
-
-            return {
-                'info': info,
-                'revenue_growth_yoy': revenue_growth_yoy,
-                'earnings_growth_yoy': earnings_growth_yoy,
-                'income_yearly': income_yearly.to_dict() if income_yearly is not None else None
-            }
-        except Exception as e:
-            print(f"yfinance attempt {attempt+1} failed: {str(e)}")
-            time.sleep(2 ** attempt)  # 1s, 2s, 4s backoff
-
-    return None
 
 @app.get("/")
-async def root():
-    return {"message": "Market Dashboard Backend - Live on Render!"}
+async def home():
+    return {
+        "message": "Market Dashboard API Live",
+        "companies_loaded": len(NIFTY_500),
+        "endpoints": ["/search-symbols?q=RELI", "/analyze/RELIANCE"]
+    }
+
 
 @app.get("/search-symbols")
-async def search_symbols(q: str):
-    # Your existing search logic
-    return {"symbols": []}  # placeholder
+async def search_symbols(q: str = Query("")):
+    query = q.strip().lower()
+    results = []
+
+    for row in NIFTY_500:
+        symbol = extract_symbol(row)
+        company = extract_name(row)
+        if not symbol:
+            continue
+
+        symbol_u = str(symbol).upper()
+        company_s = str(company)
+
+        if not query or query in symbol_u.lower() or query in company_s.lower():
+            results.append({
+                "symbol": symbol_u,
+                "name": company_s or symbol_u
+            })
+
+    results = sorted(results, key=lambda x: x["symbol"])
+    return {"symbols": results[:20]}
+
 
 @app.get("/analyze/{symbol}")
-async def analyze_symbol(symbol: str):
-    try:
-        data = safe_yfinance_fetch(symbol + ".NS")
+async def analyze(symbol: str):
+    s = symbol.strip().upper()
+    ticker = yf.Ticker(f"{s}.NS")
 
-        if data is None:
+    try:
+        info = ticker.info or {}
+        hist = ticker.history(period="6mo")
+
+        if hist.empty:
             return {
-                "symbol": symbol,
-                "error": "yfinance fetch failed after retries",
-                "forensic": {"flags": ["yfinance fetch failed: multiple retries exhausted"]}
+                "symbol": s,
+                "error": "No market data found"
             }
 
-        info = data['info']
-        revenue_growth_yoy = data['revenue_growth_yoy']
-        earnings_growth_yoy = data['earnings_growth_yoy']
+        close = hist["Close"]
+        latest_price = safe_round(close.iloc[-1])
+        prev_close = safe_round(close.iloc[-2]) if len(close) > 1 else latest_price
+
+        delta = close.diff()
+        gain = delta.clip(lower=0).rolling(14).mean()
+        loss = (-delta.clip(upper=0)).rolling(14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        latest_rsi = safe_round(rsi.iloc[-1])
+
+        sma20 = safe_round(close.rolling(20).mean().iloc[-1]) if len(close) >= 20 else None
+        sma50 = safe_round(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else None
 
         return {
-            "symbol": symbol,
-            "yahoo_symbol": symbol + ".NS",
-            "profile": {
-                "company_name": info.get("longName", "N/A"),
-                "sector": info.get("sector", "N/A"),
-                "industry": info.get("industry", "N/A"),
-                "business": info.get("longBusinessSummary", "Business description not available.")
-            },
-            "technical": {
-                "price": safe_float(info.get("currentPrice")),
-                "previous_close": safe_float(info.get("previousClose")),
-                "change": safe_float(info.get("regularMarketChange")),
-                "change_percent": safe_float(info.get("regularMarketChangePercent")),
-                # Add more technical fields
-            },
-            "fundamentals": {
-                "trailing_pe": safe_float(info.get("trailingPE")),
-                "forward_pe": safe_float(info.get("forwardPE")),
-                "price_to_book": safe_float(info.get("priceToBook")),
-                "roe": safe_float(info.get("returnOnEquity")),
-                "roa": safe_float(info.get("returnOnAssets")),
-                "debt_to_equity": safe_float(info.get("debtToEquity")),
-                "current_ratio": safe_float(info.get("currentRatio")),
-                "revenue_growth": safe_float(info.get("revenueGrowth")),  # quarterly fallback
-                "revenue_growth_yoy": revenue_growth_yoy,  # yearly
-                "earnings_growth": safe_float(info.get("earningsGrowth")),  # quarterly fallback  
-                "earnings_growth_yoy": earnings_growth_yoy,  # yearly
-                "dividend_yield": safe_float(info.get("dividendYield")),
-                "market_cap_cr": safe_float(info.get("marketCap")) / 10000000 if info.get("marketCap") else None
-            },
-            "forensic": {
-                "risk_score": 5,  # placeholder
-                "flags": []
-            },
-            "scores": {
-                "technical_score": 0,
-                "fundamental_score": 0,
-                "forensic_score": 0,
-                "total_score": 0
-            }
+            "symbol": s,
+            "company_name": info.get("longName") or s,
+            "price": latest_price,
+            "previous_close": prev_close,
+            "change": safe_round(latest_price - prev_close) if latest_price and prev_close else None,
+            "change_percent": safe_round(((latest_price - prev_close) / prev_close) * 100) if latest_price and prev_close else None,
+            "volume": int(hist["Volume"].iloc[-1]) if "Volume" in hist.columns else None,
+            "sma20": sma20,
+            "sma50": sma50,
+            "rsi": latest_rsi,
+            "pe": safe_round(info.get("trailingPE")),
+            "market_cap": info.get("marketCap"),
+            "sector": info.get("sector"),
+            "action": "BUY" if latest_rsi is not None and latest_rsi < 50 else "HOLD"
         }
     except Exception as e:
         return {
-            "symbol": symbol,
-            "error": str(e),
-            "forensic": {"flags": [str(e)]}
+            "symbol": s,
+            "error": str(e)
         }
 
+
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
