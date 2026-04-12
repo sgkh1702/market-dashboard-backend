@@ -14,11 +14,12 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://mymarketdashboard.netlify.app",
+    "*",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,13 +28,26 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent
 NIFTY_FILE = BASE_DIR / "Nifty500List.json"
 
-try:
-    with open(NIFTY_FILE, "r", encoding="utf-8") as f:
-        NIFTY_500 = json.load(f)
-    print(f"Loaded Nifty500List.json: {len(NIFTY_500)} companies")
-except Exception as e:
-    print(f"Error loading Nifty500List.json: {e}")
-    NIFTY_500 = []
+
+def load_nifty_data():
+    try:
+        with open(NIFTY_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            if "data" in data and isinstance(data["data"], list):
+                return data["data"]
+            for v in data.values():
+                if isinstance(v, list):
+                    return v
+            return []
+        if isinstance(data, list):
+            return data
+        return []
+    except Exception:
+        return []
+
+
+NIFTY_500 = load_nifty_data()
 
 
 def safe_round(value, digits=2):
@@ -46,6 +60,8 @@ def safe_round(value, digits=2):
 
 
 def extract_symbol(row):
+    if isinstance(row, str):
+        return row.strip().upper()
     if not isinstance(row, dict):
         return None
     return (
@@ -54,10 +70,14 @@ def extract_symbol(row):
         or row.get("SYMBOL")
         or row.get("ticker")
         or row.get("Ticker")
+        or row.get("Security Id")
+        or row.get("security_id")
     )
 
 
 def extract_name(row):
+    if isinstance(row, str):
+        return row.strip().upper()
     if not isinstance(row, dict):
         return ""
     return (
@@ -66,16 +86,25 @@ def extract_name(row):
         or row.get("company_name")
         or row.get("NAME OF COMPANY")
         or row.get("name")
+        or row.get("Industry")
+        or row.get("security")
         or ""
     )
 
 
 @app.get("/")
 async def home():
+    sample = []
+    for row in NIFTY_500[:10]:
+        sym = extract_symbol(row)
+        if sym:
+            sample.append(sym)
     return {
         "message": "Market Dashboard API Live",
         "companies_loaded": len(NIFTY_500),
-        "endpoints": ["/search-symbols?q=RELI", "/analyze/RELIANCE"]
+        "sample_symbols": sample,
+        "file_found": NIFTY_FILE.exists(),
+        "file_name": "Nifty500List.json"
     }
 
 
@@ -90,8 +119,8 @@ async def search_symbols(q: str = Query("")):
         if not symbol:
             continue
 
-        symbol_u = str(symbol).upper()
-        company_s = str(company)
+        symbol_u = str(symbol).strip().upper()
+        company_s = str(company).strip()
 
         if not query or query in symbol_u.lower() or query in company_s.lower():
             results.append({
@@ -99,7 +128,9 @@ async def search_symbols(q: str = Query("")):
                 "name": company_s or symbol_u
             })
 
-    results = sorted(results, key=lambda x: x["symbol"])
+    if not results and not query:
+        results = [{"symbol": extract_symbol(r), "name": extract_name(r) or extract_symbol(r)} for r in NIFTY_500[:20] if extract_symbol(r)]
+
     return {"symbols": results[:20]}
 
 
@@ -113,10 +144,7 @@ async def analyze(symbol: str):
         hist = ticker.history(period="6mo")
 
         if hist.empty:
-            return {
-                "symbol": s,
-                "error": "No market data found"
-            }
+            return {"symbol": s, "error": "No market data found"}
 
         close = hist["Close"]
         latest_price = safe_round(close.iloc[-1])
@@ -137,8 +165,8 @@ async def analyze(symbol: str):
             "company_name": info.get("longName") or s,
             "price": latest_price,
             "previous_close": prev_close,
-            "change": safe_round(latest_price - prev_close) if latest_price and prev_close else None,
-            "change_percent": safe_round(((latest_price - prev_close) / prev_close) * 100) if latest_price and prev_close else None,
+            "change": safe_round(latest_price - prev_close) if latest_price is not None and prev_close is not None else None,
+            "change_percent": safe_round(((latest_price - prev_close) / prev_close) * 100) if latest_price is not None and prev_close not in (None, 0) else None,
             "volume": int(hist["Volume"].iloc[-1]) if "Volume" in hist.columns else None,
             "sma20": sma20,
             "sma50": sma50,
@@ -149,10 +177,23 @@ async def analyze(symbol: str):
             "action": "BUY" if latest_rsi is not None and latest_rsi < 50 else "HOLD"
         }
     except Exception as e:
-        return {
-            "symbol": s,
-            "error": str(e)
-        }
+        return {"symbol": s, "error": str(e)}
+
+
+@app.get("/debug-symbols")
+async def debug_symbols():
+    preview = []
+    for row in NIFTY_500[:20]:
+        preview.append({
+            "raw": row,
+            "symbol": extract_symbol(row),
+            "name": extract_name(row)
+        })
+    return {
+        "file_found": NIFTY_FILE.exists(),
+        "count": len(NIFTY_500),
+        "preview": preview
+    }
 
 
 if __name__ == "__main__":
