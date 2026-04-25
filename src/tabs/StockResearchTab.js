@@ -6,29 +6,29 @@ import ForensicCard from "../components/stock-research/ForensicCard";
 import { fetchStockResearch } from "../services/stockApi";
 
 const theme = {
-  bg: "linear-gradient(180deg, #f4f7fb 0%, #eef4ff 100%)",
+  bg: "linear-gradient(180deg, #f8fafc 0%, #eef4fb 100%)",
   cardBg: "#ffffff",
-  cardBorder: "#dbe4f0",
+  cardBorder: "#cbd5e1",
   title: "#0f172a",
-  text: "#1f2937",
-  muted: "#64748b",
+  text: "#111827",
+  muted: "#4b5563",
 
-  blue: "#2563eb",
+  blue: "#1d4ed8",
   blueSoft: "#eff6ff",
 
-  green: "#059669",
+  green: "#047857",
   greenSoft: "#ecfdf5",
 
-  amber: "#d97706",
+  amber: "#b45309",
   amberSoft: "#fffbeb",
 
-  red: "#dc2626",
+  red: "#b91c1c",
   redSoft: "#fef2f2",
 
-  purple: "#7c3aed",
+  purple: "#6d28d9",
   purpleSoft: "#f5f3ff",
 
-  shadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+  shadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
   radius: "16px",
 };
 
@@ -42,7 +42,7 @@ const styles = {
     marginBottom: "14px",
     color: theme.title,
     fontSize: "28px",
-    fontWeight: 700,
+    fontWeight: 800,
     letterSpacing: "-0.02em",
   },
   topRow: {
@@ -95,13 +95,13 @@ const styles = {
   metricLabel: {
     fontSize: "12px",
     color: theme.muted,
-    fontWeight: 700,
+    fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.04em",
   },
   metricValue: {
     fontSize: "15px",
-    fontWeight: 700,
+    fontWeight: 800,
     color: theme.title,
   },
   selectedText: {
@@ -131,7 +131,7 @@ const styles = {
     marginBottom: "6px",
     fontSize: "12px",
     color: theme.muted,
-    fontWeight: 700,
+    fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
@@ -139,7 +139,7 @@ const styles = {
     fontSize: "16px",
     color: theme.title,
     fontWeight: 700,
-    lineHeight: "1.4",
+    lineHeight: "1.45",
     minWidth: 0,
     wordBreak: "break-word",
   },
@@ -153,14 +153,14 @@ const styles = {
     minWidth: 0,
   },
   businessBody: {
-    fontSize: "14px",
-    lineHeight: "1.7",
+    fontSize: "15px",
+    lineHeight: "1.8",
     color: theme.text,
     maxHeight: "110px",
     overflowY: "auto",
     overflowX: "hidden",
     paddingRight: "6px",
-    fontWeight: 600,
+    fontWeight: 500,
     minWidth: 0,
   },
   cardsGrid: {
@@ -202,7 +202,7 @@ const styles = {
   },
   positiveCard: {
     background: theme.greenSoft,
-    border: "1px solid #bfe8d8",
+    border: "1px solid #bbebd8",
     borderRadius: theme.radius,
     padding: "16px",
     boxShadow: theme.shadow,
@@ -218,7 +218,7 @@ const styles = {
   },
   overallCard: {
     background: theme.blueSoft,
-    border: "1px solid #cfe0ff",
+    border: "1px solid #c7dbff",
     borderRadius: theme.radius,
     padding: "16px",
     boxShadow: theme.shadow,
@@ -472,7 +472,7 @@ export default function StockResearchTab() {
         </p>
       )}
 
-      {loading && <p style={{ fontSize: "15px", fontWeight: 600 }}>Loading research...</p>}
+      {loading && <p style={{ fontSize: "15px", fontWeight: 600, color: theme.text }}>Loading research...</p>}
       {error && (
         <p style={{ color: theme.red, fontSize: "15px", fontWeight: 600 }}>
           {error}
@@ -499,7 +499,7 @@ export default function StockResearchTab() {
           </div>
 
           <div style={styles.businessCard}>
-            <h3 style={{ marginTop: 0, marginBottom: "10px", color: theme.title, fontSize: "20px", fontWeight: 700 }}>
+            <h3 style={{ marginTop: 0, marginBottom: "10px", color: theme.title, fontSize: "20px", fontWeight: 800 }}>
               Business Profile
             </h3>
             <div style={styles.businessBody}>
@@ -525,13 +525,13 @@ export default function StockResearchTab() {
 
           <div style={styles.summaryRow}>
             <div style={styles.sectionCard}>
-              <h3 style={{ marginTop: 0, marginBottom: "10px", color: theme.title, fontSize: "20px", fontWeight: 700 }}>
+              <h3 style={{ marginTop: 0, marginBottom: "10px", color: theme.title, fontSize: "20px", fontWeight: 800 }}>
                 Brokerage View
               </h3>
 
-              <div style={{ fontSize: "15px", lineHeight: "1.8", color: theme.text, fontWeight: 600 }}>
+              <div style={{ fontSize: "15px", lineHeight: "1.8", color: theme.text, fontWeight: 500 }}>
                 <div style={{ marginBottom: "8px" }}>
-                  <strong style={{ fontWeight: 700, color: theme.title }}>Price trend:</strong>{" "}
+                  <strong style={{ fontWeight: 800, color: theme.title }}>Price trend:</strong>{" "}
                   {(technicalScore ?? 0) >= 70
                     ? "The stock is showing strong upward momentum."
                     : (technicalScore ?? 0) >= 40
@@ -540,7 +540,7 @@ export default function StockResearchTab() {
                 </div>
 
                 <div style={{ marginBottom: "8px" }}>
-                  <strong style={{ fontWeight: 700, color: theme.title }}>Financial health:</strong>{" "}
+                  <strong style={{ fontWeight: 800, color: theme.title }}>Financial health:</strong>{" "}
                   {(financialScore ?? 0) >= 70
                     ? "The business looks financially strong with decent quality and reasonable valuation."
                     : (financialScore ?? 0) >= 40
@@ -549,7 +549,7 @@ export default function StockResearchTab() {
                 </div>
 
                 <div style={{ marginBottom: "8px" }}>
-                  <strong style={{ fontWeight: 700, color: theme.title }}>Forensic checks:</strong>{" "}
+                  <strong style={{ fontWeight: 800, color: theme.title }}>Forensic checks:</strong>{" "}
                   {(forensicScore ?? 0) >= 70
                     ? "Cash flow, balance sheet, and operating quality look comfortable."
                     : (forensicScore ?? 0) >= 40
@@ -558,7 +558,7 @@ export default function StockResearchTab() {
                 </div>
 
                 <div>
-                  <strong style={{ fontWeight: 700, color: theme.title }}>Overall view:</strong>{" "}
+                  <strong style={{ fontWeight: 800, color: theme.title }}>Overall view:</strong>{" "}
                   {(overallScore ?? 0) >= 70
                     ? "This looks like a stronger candidate for deeper research or gradual accumulation."
                     : (overallScore ?? 0) >= 40
@@ -569,7 +569,7 @@ export default function StockResearchTab() {
             </div>
 
             <div style={styles.sectionCard}>
-              <h3 style={{ marginTop: 0, marginBottom: "10px", color: theme.title, fontSize: "20px", fontWeight: 700 }}>
+              <h3 style={{ marginTop: 0, marginBottom: "10px", color: theme.title, fontSize: "20px", fontWeight: 800 }}>
                 Scoring
               </h3>
 
@@ -580,7 +580,7 @@ export default function StockResearchTab() {
                   color: theme.text,
                   fontWeight: 700,
                   background: theme.blueSoft,
-                  border: "1px solid #cfe0ff",
+                  border: "1px solid #c7dbff",
                   borderRadius: "12px",
                   padding: "13px 15px",
                 }}
@@ -595,32 +595,32 @@ export default function StockResearchTab() {
 
           <div style={styles.summaryGrid}>
             <div style={styles.positiveCard}>
-              <h3 style={{ marginTop: 0, marginBottom: "8px", color: theme.green, fontSize: "20px", fontWeight: 700 }}>
+              <h3 style={{ marginTop: 0, marginBottom: "8px", color: theme.green, fontSize: "20px", fontWeight: 800 }}>
                 Positive
               </h3>
-              <ul style={{ paddingLeft: "18px", marginBottom: 0, fontSize: "14px", lineHeight: "1.8", color: theme.text, fontWeight: 600 }}>
-{positivePoints.map((point, idx) => (
-  <li key={idx}>{point}</li>
-))}
+              <ul style={{ paddingLeft: "18px", marginBottom: 0, fontSize: "14px", lineHeight: "1.8", color: theme.text, fontWeight: 500 }}>
+                {positivePoints.map((point, idx) => (
+                  <li key={idx}>{point}</li>
+                ))}
               </ul>
             </div>
 
             <div style={styles.negativeCard}>
-              <h3 style={{ marginTop: 0, marginBottom: "8px", color: theme.amber, fontSize: "20px", fontWeight: 700 }}>
+              <h3 style={{ marginTop: 0, marginBottom: "8px", color: theme.amber, fontSize: "20px", fontWeight: 800 }}>
                 Negative
               </h3>
-              <ul style={{ paddingLeft: "18px", marginBottom: 0, fontSize: "14px", lineHeight: "1.8", color: theme.text, fontWeight: 600 }}>
-{negativePoints.map((point, idx) => (
-  <li key={idx}>{point}</li>
-))}
+              <ul style={{ paddingLeft: "18px", marginBottom: 0, fontSize: "14px", lineHeight: "1.8", color: theme.text, fontWeight: 500 }}>
+                {negativePoints.map((point, idx) => (
+                  <li key={idx}>{point}</li>
+                ))}
               </ul>
             </div>
 
             <div style={styles.overallCard}>
-              <h3 style={{ marginTop: 0, marginBottom: "8px", color: theme.blue, fontSize: "20px", fontWeight: 700 }}>
+              <h3 style={{ marginTop: 0, marginBottom: "8px", color: theme.blue, fontSize: "20px", fontWeight: 800 }}>
                 Overall
               </h3>
-              <p style={{ marginBottom: 0, fontSize: "14px", lineHeight: "1.8", color: theme.text, fontWeight: 600 }}>
+              <p style={{ marginBottom: 0, fontSize: "14px", lineHeight: "1.8", color: theme.text, fontWeight: 500 }}>
                 {(overallScore ?? 0) >= 70
                   ? "The stock looks fairly strong across key areas and may deserve deeper research or gradual accumulation."
                   : (overallScore ?? 0) >= 40

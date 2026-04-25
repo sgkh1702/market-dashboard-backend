@@ -1,21 +1,21 @@
 import React from "react";
 
 const theme = {
-  cardBg: "linear-gradient(180deg, #ffffff 0%, #f2fbf7 100%)",
-  cardBorder: "#dbe4f0",
+  cardBg: "linear-gradient(180deg, #ffffff 0%, #f7fcfa 100%)",
+  cardBorder: "#cbd5e1",
   title: "#0f172a",
-  text: "#1f2937",
-  muted: "#64748b",
-  value: "#065f46",
-  blue: "#2563eb",
+  text: "#111827",
+  muted: "#475569",
+  value: "#064e3b",
+  blue: "#1d4ed8",
   blueSoft: "#eff6ff",
-  green: "#059669",
+  green: "#047857",
   greenSoft: "#ecfdf5",
-  amber: "#d97706",
+  amber: "#b45309",
   amberSoft: "#fffbeb",
-  red: "#dc2626",
+  red: "#b91c1c",
   redSoft: "#fef2f2",
-  shadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+  shadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
   radius: "16px",
 };
 
@@ -253,7 +253,7 @@ export default function FinancialCard({ financial, forensic }) {
               marginBottom: "4px",
               color: theme.title,
               fontSize: "22px",
-              fontWeight: 700,
+              fontWeight: 800,
             }}
           >
             Financial
@@ -270,7 +270,7 @@ export default function FinancialCard({ financial, forensic }) {
             borderRadius: "12px",
             padding: "8px 10px",
             background: theme.blueSoft,
-            border: "1px solid #cfe0ff",
+            border: "1px solid #c7dbff",
           }}
         >
           <div style={{ fontSize: "12px", color: theme.muted, fontWeight: 700 }}>

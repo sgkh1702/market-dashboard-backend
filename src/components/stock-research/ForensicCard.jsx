@@ -1,22 +1,22 @@
 import React from "react";
 
 const theme = {
-  cardBg: "linear-gradient(180deg, #ffffff 0%, #f7f5ff 100%)",
-  cardBorder: "#dbe4f0",
+  cardBg: "linear-gradient(180deg, #ffffff 0%, #faf7ff 100%)",
+  cardBorder: "#cbd5e1",
   title: "#0f172a",
-  text: "#1f2937",
-  muted: "#64748b",
-  blue: "#2563eb",
+  text: "#111827",
+  muted: "#475569",
+  blue: "#1d4ed8",
   blueSoft: "#eff6ff",
-  green: "#059669",
+  green: "#047857",
   greenSoft: "#ecfdf5",
-  amber: "#d97706",
+  amber: "#b45309",
   amberSoft: "#fffbeb",
-  red: "#dc2626",
+  red: "#b91c1c",
   redSoft: "#fef2f2",
-  purple: "#7c3aed",
+  purple: "#6d28d9",
   purpleSoft: "#f5f3ff",
-  shadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+  shadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
   radius: "16px",
 };
 
@@ -31,33 +31,55 @@ function gradeMeaning(grade) {
 }
 
 function getTileTone(kind) {
-  if (kind === "good") return { bg: theme.greenSoft, color: theme.green, border: "#bfe8d8" };
-  if (kind === "warn") return { bg: theme.amberSoft, color: theme.amber, border: "#f2dcc5" };
-  return { bg: theme.redSoft, color: theme.red, border: "#f4c7c7" };
+  if (kind === "good") {
+    return { bg: theme.greenSoft, color: theme.green, border: "#b7e4d3" };
+  }
+  if (kind === "warn") {
+    return { bg: theme.amberSoft, color: theme.amber, border: "#f1d8b5" };
+  }
+  return { bg: theme.redSoft, color: theme.red, border: "#f1c3c3" };
 }
 
 function getCashFlowRemark(cfoPat) {
   const n = Number(cfoPat);
-  if (Number.isNaN(n)) return { tone: "warn", text: "Cash-flow support is not clearly available." };
-  if (n >= 1) return { tone: "good", text: "Profit is well supported by operating cash flow." };
-  if (n >= 0.8) return { tone: "warn", text: "Cash conversion is acceptable but needs monitoring." };
+  if (Number.isNaN(n)) {
+    return { tone: "warn", text: "Cash-flow support is not clearly available." };
+  }
+  if (n >= 1) {
+    return { tone: "good", text: "Profit is well supported by operating cash flow." };
+  }
+  if (n >= 0.8) {
+    return { tone: "warn", text: "Cash conversion is acceptable but needs monitoring." };
+  }
   return { tone: "bad", text: "Profit is not strongly backed by operating cash flow." };
 }
 
 function getLeverageRemark(debtEquity) {
   const n = Number(debtEquity);
-  if (Number.isNaN(n)) return { tone: "warn", text: "Debt position is not fully available." };
+  if (Number.isNaN(n)) {
+    return { tone: "warn", text: "Debt position is not fully available." };
+  }
   const d = n > 10 ? n / 100 : n;
-  if (d <= 0.5) return { tone: "good", text: "Debt levels look comfortable." };
-  if (d <= 1) return { tone: "warn", text: "Debt is manageable but should be watched." };
+  if (d <= 0.5) {
+    return { tone: "good", text: "Debt levels look comfortable." };
+  }
+  if (d <= 1) {
+    return { tone: "warn", text: "Debt is manageable but should be watched." };
+  }
   return { tone: "bad", text: "Debt looks elevated and needs deeper review." };
 }
 
 function getMarginRemark(opmCurrent) {
   const n = Number(opmCurrent);
-  if (Number.isNaN(n)) return { tone: "warn", text: "Margin trend is not clearly available." };
-  if (n >= 15) return { tone: "good", text: "Operating margin looks healthy." };
-  if (n >= 8) return { tone: "warn", text: "Margins are moderate and need tracking." };
+  if (Number.isNaN(n)) {
+    return { tone: "warn", text: "Margin trend is not clearly available." };
+  }
+  if (n >= 15) {
+    return { tone: "good", text: "Operating margin looks healthy." };
+  }
+  if (n >= 8) {
+    return { tone: "warn", text: "Margins are moderate and need tracking." };
+  }
   return { tone: "bad", text: "Operating margin looks weak." };
 }
 
@@ -89,8 +111,12 @@ function buildOverallSentence(forensic) {
   const badCount = [cash, lev, mar, wc].filter((x) => x.tone === "bad").length;
   const warnCount = [cash, lev, mar, wc].filter((x) => x.tone === "warn").length;
 
-  if (badCount >= 2) return "This stock shows multiple accounting or operating areas that need caution.";
-  if (badCount === 1 || warnCount >= 2) return "The forensic picture is mixed: some parts are fine, but a few areas need monitoring.";
+  if (badCount >= 2) {
+    return "This stock shows multiple accounting or operating areas that need caution.";
+  }
+  if (badCount === 1 || warnCount >= 2) {
+    return "The forensic picture is mixed: some parts are fine, but a few areas need monitoring.";
+  }
   return "The forensic picture looks fairly comfortable on the main checks.";
 }
 
@@ -100,7 +126,7 @@ function infoTile(title, remark) {
   return (
     <div
       style={{
-        padding: "11px",
+        padding: "12px",
         borderRadius: "10px",
         border: `1px solid ${tone.border}`,
         background: tone.bg,
@@ -109,7 +135,7 @@ function infoTile(title, remark) {
       <div
         style={{
           fontSize: "12px",
-          fontWeight: 700,
+          fontWeight: 800,
           color: tone.color,
           marginBottom: "5px",
           textTransform: "uppercase",
@@ -121,7 +147,7 @@ function infoTile(title, remark) {
       <div
         style={{
           fontSize: "13px",
-          lineHeight: "1.55",
+          lineHeight: "1.6",
           color: theme.text,
           fontWeight: 600,
         }}
@@ -168,12 +194,19 @@ export default function ForensicCard({ forensic = {} }) {
               marginBottom: "4px",
               color: theme.title,
               fontSize: "22px",
-              fontWeight: 700,
+              fontWeight: 800,
             }}
           >
             Forensic
           </h3>
-          <div style={{ fontSize: "12px", color: theme.muted, fontWeight: 600 }}>
+          <div
+            style={{
+              fontSize: "12px",
+              color: theme.muted,
+              fontWeight: 600,
+              lineHeight: "1.4",
+            }}
+          >
             Plain-language quality checks
           </div>
         </div>
@@ -183,7 +216,7 @@ export default function ForensicCard({ forensic = {} }) {
             padding: "8px 10px",
             borderRadius: "12px",
             background: theme.purpleSoft,
-            border: "1px solid #ddd6fe",
+            border: "1px solid #d8ccff",
             textAlign: "right",
             minWidth: "110px",
           }}
@@ -207,6 +240,7 @@ export default function ForensicCard({ forensic = {} }) {
               fontSize: "12px",
               color: theme.muted,
               fontWeight: 600,
+              lineHeight: "1.4",
             }}
           >
             Grade {grade} | {gradeMeaning(grade)}
@@ -217,13 +251,13 @@ export default function ForensicCard({ forensic = {} }) {
       <div
         style={{
           marginBottom: "12px",
-          padding: "11px",
+          padding: "12px",
           borderRadius: "10px",
           background: "#ffffff",
           border: `1px solid ${theme.cardBorder}`,
           color: theme.text,
           fontSize: "13px",
-          lineHeight: "1.6",
+          lineHeight: "1.65",
           fontWeight: 600,
         }}
       >
@@ -239,17 +273,17 @@ export default function ForensicCard({ forensic = {} }) {
 
       <div
         style={{
-          padding: "11px",
+          padding: "12px",
           borderRadius: "10px",
           background: "#ffffff",
           border: `1px dashed ${theme.cardBorder}`,
           fontSize: "12px",
-          lineHeight: "1.65",
+          lineHeight: "1.7",
           color: theme.muted,
           fontWeight: 600,
         }}
       >
-        <div style={{ color: theme.title, fontWeight: 700, marginBottom: "5px" }}>
+        <div style={{ color: theme.title, fontWeight: 800, marginBottom: "6px" }}>
           Verify on Yahoo Finance
         </div>
         <div>Cash Flow: open the Cash Flow tab and compare operating cash flow with net income.</div>

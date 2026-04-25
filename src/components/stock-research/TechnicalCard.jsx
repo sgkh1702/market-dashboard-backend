@@ -1,21 +1,21 @@
 import React from "react";
 
 const theme = {
-  cardBg: "linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%)",
-  cardBorder: "#dbe4f0",
+  cardBg: "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
+  cardBorder: "#cbd5e1",
   title: "#0f172a",
-  text: "#1f2937",
-  muted: "#64748b",
+  text: "#111827",
+  muted: "#475569",
   value: "#1e3a8a",
-  blue: "#2563eb",
+  blue: "#1d4ed8",
   blueSoft: "#eff6ff",
-  green: "#059669",
+  green: "#047857",
   greenSoft: "#ecfdf5",
-  amber: "#d97706",
+  amber: "#b45309",
   amberSoft: "#fffbeb",
-  red: "#dc2626",
+  red: "#b91c1c",
   redSoft: "#fef2f2",
-  shadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+  shadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
   radius: "16px",
 };
 
@@ -34,10 +34,10 @@ function tone(type, value, extra = {}) {
   const num = getNum(value);
   const cmp = getNum(extra.cmp);
 
-  const green = { color: theme.green, bg: theme.greenSoft };
-  const amber = { color: theme.amber, bg: theme.amberSoft };
-  const red = { color: theme.red, bg: theme.redSoft };
-  const neutral = { color: theme.value, bg: "#f8fafc" };
+  const green = { color: theme.green, bg: theme.greenSoft, border: "#b7e4d3" };
+  const amber = { color: theme.amber, bg: theme.amberSoft, border: "#f1d8b5" };
+  const red = { color: theme.red, bg: theme.redSoft, border: "#f3c7c7" };
+  const neutral = { color: theme.value, bg: "#f8fafc", border: "#dbe4f0" };
 
   if (type === "score") {
     if (num === null) return neutral;
@@ -60,12 +60,8 @@ function tone(type, value, extra = {}) {
 
   if (type === "trend") {
     const v = String(value || "").toLowerCase();
-    if (v.includes("bull") || v.includes("strong") || v.includes("up")) {
-      return green;
-    }
-    if (v.includes("bear") || v.includes("weak") || v.includes("down")) {
-      return red;
-    }
+    if (v.includes("bull") || v.includes("strong") || v.includes("up")) return green;
+    if (v.includes("bear") || v.includes("weak") || v.includes("down")) return red;
     return amber;
   }
 
@@ -80,15 +76,16 @@ function metricRow(label, value, valueStyle = {}, last = false) {
         justifyContent: "space-between",
         alignItems: "center",
         gap: "12px",
-        padding: "9px 0",
+        padding: "10px 0",
         borderBottom: last ? "none" : `1px solid ${theme.cardBorder}`,
       }}
     >
       <span
         style={{
-          fontSize: "12px",
+          fontSize: "13px",
           color: theme.muted,
-          fontWeight: 600,
+          fontWeight: 700,
+          lineHeight: "1.4",
         }}
       >
         {label}
@@ -96,8 +93,9 @@ function metricRow(label, value, valueStyle = {}, last = false) {
       <span
         style={{
           fontSize: "15px",
-          fontWeight: 700,
+          fontWeight: 800,
           color: theme.value,
+          lineHeight: "1.4",
           ...valueStyle,
         }}
       >
@@ -147,7 +145,7 @@ export default function TechnicalCard({ technical, overview }) {
         background: theme.cardBg,
         border: `1px solid ${theme.cardBorder}`,
         borderRadius: theme.radius,
-        padding: "14px",
+        padding: "16px",
         boxShadow: theme.shadow,
         minHeight: "360px",
       }}
@@ -158,22 +156,29 @@ export default function TechnicalCard({ technical, overview }) {
           justifyContent: "space-between",
           alignItems: "flex-start",
           gap: "10px",
-          marginBottom: "10px",
+          marginBottom: "12px",
         }}
       >
         <div>
           <h3
             style={{
               margin: 0,
-              marginBottom: "3px",
+              marginBottom: "4px",
               color: theme.title,
               fontSize: "20px",
-              fontWeight: 700,
+              fontWeight: 800,
             }}
           >
             Technical
           </h3>
-          <div style={{ fontSize: "11px", color: theme.muted, fontWeight: 500 }}>
+          <div
+            style={{
+              fontSize: "12px",
+              color: theme.muted,
+              fontWeight: 600,
+              lineHeight: "1.4",
+            }}
+          >
             Price trend and momentum view
           </div>
         </div>
@@ -185,10 +190,10 @@ export default function TechnicalCard({ technical, overview }) {
             borderRadius: "12px",
             padding: "8px 10px",
             background: scoreTone.bg,
-            border: "1px solid #cfe0ff",
+            border: `1px solid ${scoreTone.border}`,
           }}
         >
-          <div style={{ fontSize: "11px", color: theme.muted, fontWeight: 600 }}>
+          <div style={{ fontSize: "11px", color: theme.muted, fontWeight: 700 }}>
             Score
           </div>
           <div
@@ -211,11 +216,12 @@ export default function TechnicalCard({ technical, overview }) {
           {
             color: trendTone.color,
             background: trendTone.bg,
+            border: `1px solid ${trendTone.border}`,
             padding: "4px 10px",
             borderRadius: "999px",
             display: "inline-block",
             fontSize: "13px",
-            fontWeight: 700,
+            fontWeight: 800,
           }
         )}
 
@@ -240,7 +246,6 @@ export default function TechnicalCard({ technical, overview }) {
         })}
 
         {metricRow("52W High", fmt(high52))}
-
         {metricRow("52W Low", fmt(low52), {}, true)}
       </div>
     </div>
