@@ -1,4 +1,5 @@
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE =
+  process.env.REACT_APP_API_BASE || "https://market-dashboard-backend-3.onrender.com";
 
 export async function searchStocks(query) {
   const url = `${API_BASE}/api/stocks/search?q=${encodeURIComponent(query)}`;

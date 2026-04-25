@@ -21,3 +21,11 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# backend secrets
+backend/.env
+backend/webpage-interface-59467c78ec92.json
+
+# python cache
+backend/**/__pycache__/
+backend/**/*.pyc

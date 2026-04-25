@@ -1,38 +1,38 @@
 {
   "symbol": "PREMIERENE",
   "exchange": "NSE",
-  "asOf": "2026-04-18T12:58:26.101567+00:00",
+  "asOf": "2026-04-25T12:37:21.001148+00:00",
   "company": {
     "name": "PREMIER ENERGIES LIMITED",
     "sector": "Technology",
     "industry": "Solar",
-    "marketCapCr": 46465.17,
+    "marketCapCr": 45470.38,
     "description": "Premier Energies Limited manufactures and sells integrated solar cells and modules in India. It offers bifacial monocrystalline PERC cells; monofacial solar modules; and bifacial transparent back sheet and dual glass modules, as well as custom made panels for specific applications. The company provides engineering, procurement, and construction services for ground-mounted and rooftop solar power projects; upgradation services for transmission line and substation; and solar photo voltaic cells and solar products, such as solar water pumps, lanterns, lighting system, and solar e-vehicles. In addition, it operates a solar power project as project developer. The company was incorporated in 1995 and is based in Hyderabad, India."
   },
   "overview": {
-    "cmp": 1034.6,
-    "change": 31.5,
-    "changePercent": 3.14,
-    "high": 1050.8,
-    "low": 1004.0,
-    "prevClose": 1003.1,
+    "cmp": 1007.55,
+    "change": 6.85,
+    "changePercent": 0.68,
+    "high": 1032.0,
+    "low": 956.55,
+    "prevClose": 1000.7,
     "week52High": 1163.9,
     "week52Low": 666.9
   },
   "technical": {
-    "sma20": 924.7,
-    "sma50": 827.18,
-    "sma200": 938.9,
+    "sma20": 961.15,
+    "sma50": 849.49,
+    "sma200": 937.61,
     "cmpVs20Sma": true,
     "cmpVs50Sma": true,
     "cmpVs200Sma": true,
-    "rsi14": 79.61,
+    "rsi14": 74.17,
     "trendLabel": "Neutral",
     "trendScore": 85
   },
   "financial": {
-    "pe": 37.04,
-    "pb": 13.42,
+    "pe": 35.97,
+    "pb": 13.07,
     "roe": null,
     "roce": null,
     "roa": null,
@@ -62,46 +62,6 @@
     "resolution": "D",
     "range": "1Y",
     "series": [
-      {
-        "t": 1753315200,
-        "o": 1097.0,
-        "h": 1106.0,
-        "l": 1076.4000244140625,
-        "c": 1101.5999755859375,
-        "v": 1047522.0
-      },
-      {
-        "t": 1753401600,
-        "o": 1101.0,
-        "h": 1122.699951171875,
-        "l": 1081.0,
-        "c": 1089.0999755859375,
-        "v": 1287661.0
-      },
-      {
-        "t": 1753660800,
-        "o": 1094.0,
-        "h": 1094.0,
-        "l": 1043.0999755859375,
-        "c": 1053.4000244140625,
-        "v": 1705083.0
-      },
-      {
-        "t": 1753747200,
-        "o": 1053.0,
-        "h": 1076.0,
-        "l": 1041.300048828125,
-        "c": 1052.5999755859375,
-        "v": 1034729.0
-      },
-      {
-        "t": 1753833600,
-        "o": 1060.199951171875,
-        "h": 1099.9000244140625,
-        "l": 1060.0,
-        "c": 1070.199951171875,
-        "v": 2521530.0
-      },
       {
         "t": 1753920000,
         "o": 1049.0,
@@ -1501,6 +1461,46 @@
         "l": 1004.0,
         "c": 1034.5999755859375,
         "v": 7485168.0
+      },
+      {
+        "t": 1776643200,
+        "o": 1038.4000244140625,
+        "h": 1044.5999755859375,
+        "l": 1001.8499755859375,
+        "c": 1010.75,
+        "v": 1891731.0
+      },
+      {
+        "t": 1776729600,
+        "o": 1013.0,
+        "h": 1017.25,
+        "l": 992.25,
+        "c": 995.7000122070312,
+        "v": 1128955.0
+      },
+      {
+        "t": 1776816000,
+        "o": 991.0999755859375,
+        "h": 1000.1500244140625,
+        "l": 986.4500122070312,
+        "c": 990.7999877929688,
+        "v": 995070.0
+      },
+      {
+        "t": 1776902400,
+        "o": 990.0,
+        "h": 1010.5499877929688,
+        "l": 981.5999755859375,
+        "c": 1000.7000122070312,
+        "v": 1371374.0
+      },
+      {
+        "t": 1776988800,
+        "o": 990.0,
+        "h": 1032.0,
+        "l": 956.5499877929688,
+        "c": 1007.5499877929688,
+        "v": 4534019.0
       }
     ]
   },

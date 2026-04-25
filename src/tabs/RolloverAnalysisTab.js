@@ -14,7 +14,7 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import useSheetRange from "../hooks/useSheetRange";
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://127.0.0.1:8000";
+const API_BASE = "https://market-dashboard-backend-3.onrender.com";
 
 const theme = {
   bg: "#f8fafc",
