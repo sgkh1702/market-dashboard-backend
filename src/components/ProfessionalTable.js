@@ -1,16 +1,82 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 
 const indexLinks = {
   "Nifty 50": "https://www.tradingview.com/chart/?symbol=NSE:NIFTY",
-  // Add others as needed
+  "NIFTY 50": "https://www.tradingview.com/chart/?symbol=NSE:NIFTY",
+  "NIFTY": "https://www.tradingview.com/chart/?symbol=NSE:NIFTY",
+  "Nifty Bank": "https://www.tradingview.com/chart/?symbol=NSE:BANKNIFTY",
+  "BANKNIFTY": "https://www.tradingview.com/chart/?symbol=NSE:BANKNIFTY",
+  "Bank Nifty": "https://www.tradingview.com/chart/?symbol=NSE:BANKNIFTY",
+  "Nifty Financial Services": "https://www.tradingview.com/chart/?symbol=NSE:CNXFINANCE",
+  "FINNIFTY": "https://www.tradingview.com/chart/?symbol=NSE:CNXFINANCE",
+  "CNXFINANCE": "https://www.tradingview.com/chart/?symbol=NSE:CNXFINANCE",
+  "Nifty Midcap Select": "https://www.tradingview.com/chart/?symbol=NSE:MIDCPNIFTY",
+  "Nifty Mid Select": "https://www.tradingview.com/chart/?symbol=NSE:MIDCPNIFTY",
+  "MIDCPNIFTY": "https://www.tradingview.com/chart/?symbol=NSE:MIDCPNIFTY",
+  Sensex: "https://www.tradingview.com/chart/?symbol=BSE:SENSEX",
+  SENSEX: "https://www.tradingview.com/chart/?symbol=BSE:SENSEX",
+  IndiaVIX: "https://www.tradingview.com/chart/?symbol=NSE:INDIAVIX",
+  INDIAVIX: "https://www.tradingview.com/chart/?symbol=NSE:INDIAVIX",
 };
 
+function normalizeSymbol(symbol) {
+  return String(symbol || "").trim();
+}
+
+function isIndexSymbol(symbol) {
+  const clean = normalizeSymbol(symbol);
+  return Object.prototype.hasOwnProperty.call(indexLinks, clean);
+}
+
 function getSymbolLink(symbol) {
-  if (indexLinks[symbol]) return indexLinks[symbol];
-  if (/^[A-Z0-9]+$/i.test(symbol)) {
-    return `https://www.tradingview.com/chart/?symbol=NSE:${symbol}`;
+  const clean = normalizeSymbol(symbol);
+  if (!clean) return null;
+
+  if (indexLinks[clean]) return indexLinks[clean];
+
+  if (/^[A-Z0-9\\-_&]+$/i.test(clean)) {
+    return `https://www.tradingview.com/chart/?symbol=NSE:${clean}`;
   }
+
   return null;
+}
+
+function getSimple5DDataFromRow(headersLower, safeRow) {
+  const ltpIdx = headersLower.findIndex(
+    (h) => h.includes("ltp") || h.includes("cmp") || h.includes("underlying")
+  );
+  const changeIdx = headersLower.findIndex(
+    (h) => h.includes("% change") || h === "change"
+  );
+
+  if (ltpIdx === -1) return null;
+
+  const ltp = parseFloat(safeRow[ltpIdx]);
+  const change = changeIdx !== -1 ? parseFloat(safeRow[changeIdx]) : 0;
+
+  if (isNaN(ltp)) return null;
+
+  const step = isNaN(change) ? 0 : (ltp * change) / 100 / 4;
+
+  return [
+    { price: ltp - step * 2 },
+    { price: ltp - step },
+    { price: ltp },
+    { price: ltp + step / 2 },
+    { price: ltp + step },
+  ];
+}
+
+function isTickerLikeHeader(headerText) {
+  return (
+    headerText.includes("symbol") ||
+    headerText.includes("ticker") ||
+    headerText.includes("tckr") ||
+    headerText === "stock" ||
+    headerText.includes("underlying") ||
+    headerText.includes("index") ||
+    headerText.includes("indices")
+  );
 }
 
 export default function ProfessionalTable({
@@ -18,17 +84,22 @@ export default function ProfessionalTable({
   headers = [],
   rows = [],
   tableType,
+  nameColumnAlign = "left",
 }) {
   if (!Array.isArray(headers)) headers = [];
   if (!Array.isArray(rows)) rows = [];
 
   const isWideTable =
-    tableType === "stock-performance" || tableType === "sector-performance";
+    tableType === "stock-performance" ||
+    tableType === "sector-performance" ||
+    tableType === "multibagger";
 
-  const [sortConfig, setSortConfig] = React.useState({
+  const [sortConfig, setSortConfig] = useState({
     columnIndex: null,
     direction: "asc",
   });
+
+  const [hoverSymbol, setHoverSymbol] = useState(null);
 
   const handleSort = (colIndex) => {
     setSortConfig((prev) => {
@@ -40,7 +111,7 @@ export default function ProfessionalTable({
     });
   };
 
-  const sortedRows = React.useMemo(() => {
+  const sortedRows = useMemo(() => {
     if (sortConfig.columnIndex == null) return rows;
 
     const idx = sortConfig.columnIndex;
@@ -63,21 +134,17 @@ export default function ProfessionalTable({
     });
   }, [rows, sortConfig]);
 
-  const headersLower = headers.map((h) =>
-    String(h || "").toLowerCase().trim()
-  );
+  const headersLower = headers.map((h) => String(h || "").toLowerCase().trim());
 
   const prevCloseIdx = headersLower.findIndex(
-    (h) => h?.includes("prev") && h?.includes("close")
+    (h) => h.includes("prev") && h.includes("close")
   );
 
   const colorBySign = (val) => (val > 0 ? "green" : val < 0 ? "red" : "#333");
 
   const colorColumns = ["change", "% change", "cmp", "ltp", "underlying"];
   const colorColumnIndexes = colorColumns
-    .map((col) =>
-      headersLower.findIndex((h) => h?.includes(col.toLowerCase()) || false)
-    )
+    .map((col) => headersLower.findIndex((h) => h.includes(col.toLowerCase())))
     .filter((idx) => idx !== -1);
 
   const allowedTableTypes = [
@@ -91,6 +158,7 @@ export default function ProfessionalTable({
     "sma-crossover",
     "dark-cloud",
     "fno-pulse",
+    "multibagger",
   ];
 
   const hidePrevClose =
@@ -113,6 +181,7 @@ export default function ProfessionalTable({
     minWidth: isWideTable ? 920 : 320,
     margin: "0 0 24px 0",
     overflow: "visible",
+    position: "relative",
   };
 
   const headerStyle = {
@@ -140,6 +209,8 @@ export default function ProfessionalTable({
     padding: "6px 10px",
     whiteSpace: "nowrap",
     textAlign: "left",
+    cursor: "pointer",
+    userSelect: "none",
   };
 
   const tdStyle = {
@@ -158,6 +229,29 @@ export default function ProfessionalTable({
     textAlign: "left",
     color: "#2376c5",
     fontWeight: 600,
+  };
+
+  const tooltipStyle = {
+    position: "absolute",
+    top: "-10px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "rgba(255, 255, 255, 0.98)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    borderRadius: 8,
+    padding: "10px 12px",
+    zIndex: 1000,
+    minWidth: 180,
+    border: "1px solid #e2e8f0",
+    pointerEvents: "none",
+  };
+
+  const tooltipHeader = {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#222",
+    margin: 0,
+    marginBottom: 6,
   };
 
   return (
@@ -181,13 +275,21 @@ export default function ProfessionalTable({
                     key={j}
                     style={{
                       ...thStyle,
-                      cursor: "pointer",
-                      userSelect: "none",
+                      background: isActive ? "#1a5eb6" : "#2376c5",
                     }}
                     onClick={() => handleSort(j)}
+                    title="Click to sort"
                   >
                     {header || ""}
-                    {isActive && (dir === "asc" ? " ▲" : " ▼")}
+                    <span style={{ fontSize: 12, marginLeft: 4 }}>
+                      {isActive ? (
+                        <span style={{ color: "#fff" }}>
+                          {dir === "asc" ? " ▲" : " ▼"}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#b8d4f5" }}> ▲▼</span>
+                      )}
+                    </span>
                   </th>
                 );
               })}
@@ -199,11 +301,7 @@ export default function ProfessionalTable({
               <tr>
                 <td
                   colSpan={headerDisplay.length}
-                  style={{
-                    padding: "20px",
-                    textAlign: "center",
-                    color: "#999",
-                  }}
+                  style={{ padding: "20px", textAlign: "center", color: "#999" }}
                 >
                   Loading data...
                 </td>
@@ -211,7 +309,9 @@ export default function ProfessionalTable({
             ) : (
               sortedRows.map((row, i) => {
                 const safeRow = Array.isArray(row)
-                  ? row.map((cell) => cell || "")
+                  ? row.map((cell) =>
+                      cell === null || cell === undefined ? "" : cell
+                    )
                   : [];
 
                 const rowDisplay = hidePrevClose
@@ -221,26 +321,31 @@ export default function ProfessionalTable({
                 return (
                   <tr
                     key={i}
-                    style={{
-                      background: i % 2 === 0 ? "#f9fbfe" : "#fff",
-                    }}
+                    style={{ background: i % 2 === 0 ? "#f9fbfe" : "#fff" }}
                   >
                     {rowDisplay.map((cell, j) => {
                       let origJ = j;
 
-                      if (
-                        hidePrevClose &&
-                        prevCloseIdx !== -1 &&
-                        j >= prevCloseIdx
-                      ) {
+                      if (hidePrevClose && prevCloseIdx !== -1 && j >= prevCloseIdx) {
                         origJ = j + 1;
                       }
 
                       const headerText = headersLower[origJ] || "";
+                      const isTickerCell = isTickerLikeHeader(headerText);
+
                       let color = "#333";
                       let fontWeight = 600;
-                      let textAlign = origJ === 0 ? "left" : "right";
+                      let textAlign = "right";
                       let displayCell = cell;
+
+                      if (
+                        tableType === "multibagger" &&
+                        headerText.includes("name")
+                      ) {
+                        textAlign = nameColumnAlign;
+                      } else if (origJ === 0 || isTickerCell || headerText.includes("name")) {
+                        textAlign = "left";
+                      }
 
                       if (
                         headerText.includes("weighted rs") &&
@@ -262,41 +367,95 @@ export default function ProfessionalTable({
                         displayCell = Number(cell).toFixed(1);
                       }
 
+                      if (isTickerCell) {
+                        const symbolText = String(cell).trim();
+                        const link = getSymbolLink(symbolText);
+                        const previewData = getSimple5DDataFromRow(headersLower, safeRow);
+                        const isIndex = isIndexSymbol(symbolText);
 
-if (
-  origJ === 0 &&
-  (
-    headerText.includes("symbol") ||
-    headerText.includes("stock") ||
-    headerText.includes("tckr") ||
-    headerText.includes("underlying")
-  )
-) {
-  const link = getSymbolLink(cell);
-  if (link) {
-    return (
-      <td key={j} style={tdLeftStyle}>
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            color: "#2376c5",
-            fontWeight: 600,
-            textDecoration: "underline",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {cell}
-        </a>
-      </td>
-    );
-  }
-}
-                      if (
-                        colorColumnIndexes.includes(origJ) &&
-                        !isNaN(parseFloat(cell))
-                      ) {
+                        return (
+                          <td
+                            key={j}
+                            style={{
+                              ...tdLeftStyle,
+                              position: "relative",
+                              color: link ? "#2376c5" : "#333",
+                            }}
+                            onMouseEnter={() => setHoverSymbol(`${symbolText}-${i}-${origJ}`)}
+                            onMouseLeave={() => setHoverSymbol(null)}
+                          >
+                            {link ? (
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: "#2376c5",
+                                  fontWeight: 600,
+                                  textDecoration: "underline",
+                                  whiteSpace: "nowrap",
+                                  cursor: "pointer",
+                                }}
+                                title={
+                                  isIndex
+                                    ? "Open TradingView index chart"
+                                    : "Open TradingView stock chart"
+                                }
+                              >
+                                {symbolText}
+                              </a>
+                            ) : (
+                              <span style={{ color: "#333", fontWeight: 600 }}>
+                                {symbolText}
+                              </span>
+                            )}
+
+                            {hoverSymbol === `${symbolText}-${i}-${origJ}` && previewData && (
+                              <div style={tooltipStyle}>
+                                <p style={tooltipHeader}>{symbolText} • 5D Preview</p>
+                                <div
+                                  style={{
+                                    height: 28,
+                                    width: 150,
+                                    position: "relative",
+                                    marginTop: 2,
+                                  }}
+                                >
+                                  {previewData.map((p, idx) => {
+                                    const maxP = Math.max(
+                                      ...previewData.map((pt) => pt.price)
+                                    );
+                                    const minP = Math.min(
+                                      ...previewData.map((pt) => pt.price)
+                                    );
+                                    const range = maxP - minP || 1;
+                                    const chartHeight = 22;
+                                    const normalizedHeight =
+                                      ((p.price - minP) / range) * chartHeight;
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        style={{
+                                          position: "absolute",
+                                          width: "14px",
+                                          height: `${Math.max(4, normalizedHeight)}px`,
+                                          background: "#2376c5",
+                                          bottom: 0,
+                                          left: `${idx * 28}px`,
+                                          borderRadius: "2px 2px 0 0",
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      }
+
+                      if (colorColumnIndexes.includes(origJ) && !isNaN(parseFloat(cell))) {
                         color = colorBySign(parseFloat(cell));
                         fontWeight = 700;
                       }
@@ -304,12 +463,7 @@ if (
                       return (
                         <td
                           key={j}
-                          style={{
-                            ...tdStyle,
-                            fontWeight,
-                            color,
-                            textAlign,
-                          }}
+                          style={{ ...tdStyle, fontWeight, color, textAlign }}
                         >
                           {displayCell}
                         </td>
