@@ -3,8 +3,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yfinance as yf
 import pandas as pd
+import yfinance as yf
 
 from app.utils.indicators import sma, rsi, round_nullable
 from app.utils.scoring import (
@@ -12,10 +12,6 @@ from app.utils.scoring import (
     derive_trend_score,
     derive_forensic_score,
     derive_forensic_grade,
-    # derive_cashflow_quality,
-    # derive_earnings_quality,
-    # derive_margin_stability,
-    # derive_red_flags,
 )
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -34,9 +30,7 @@ def cache_file(symbol: str) -> Path:
 
 
 def is_cache_fresh(path: Path, max_age_seconds=CACHE_TTL_SECONDS) -> bool:
-    if not path.exists():
-        return False
-    return (time.time() - path.stat().st_mtime) <= max_age_seconds
+    return path.exists() and (time.time() - path.stat().st_mtime) <= max_age_seconds
 
 
 def load_cache(symbol: str):
@@ -56,7 +50,10 @@ def save_cache(symbol: str, data: dict):
 def market_cap_to_cr(value):
     if value is None:
         return None
-    return round(value / 10000000, 2)
+    try:
+        return round(value / 10000000, 2)
+    except Exception:
+        return None
 
 
 def build_series_from_history(hist_df):
@@ -66,14 +63,16 @@ def build_series_from_history(hist_df):
     series = []
     for idx, row in hist_df.iterrows():
         ts = int(idx.to_pydatetime().replace(tzinfo=timezone.utc).timestamp())
-        series.append({
-            "t": ts,
-            "o": float(row["Open"]) if row["Open"] is not None else 0.0,
-            "h": float(row["High"]) if row["High"] is not None else 0.0,
-            "l": float(row["Low"]) if row["Low"] is not None else 0.0,
-            "c": float(row["Close"]) if row["Close"] is not None else 0.0,
-            "v": float(row["Volume"]) if row["Volume"] is not None else 0.0,
-        })
+        series.append(
+            {
+                "t": ts,
+                "o": float(row["Open"]) if pd.notna(row["Open"]) else 0.0,
+                "h": float(row["High"]) if pd.notna(row["High"]) else 0.0,
+                "l": float(row["Low"]) if pd.notna(row["Low"]) else 0.0,
+                "c": float(row["Close"]) if pd.notna(row["Close"]) else 0.0,
+                "v": float(row["Volume"]) if pd.notna(row["Volume"]) else 0.0,
+            }
+        )
     return series
 
 
@@ -89,8 +88,6 @@ def get_info_dict(ticker):
 
 def get_statement_df(statement):
     try:
-        if statement is None:
-            return None
         if isinstance(statement, pd.DataFrame) and not statement.empty:
             return statement
     except Exception:
@@ -233,15 +230,6 @@ def calc_financial_grade(score):
     return "E"
 
 
-def safe_pct(numerator, denominator):
-    if numerator is None or denominator in (None, 0):
-        return None
-    try:
-        return (numerator / denominator) * 100
-    except Exception:
-        return None
-
-
 def calc_forensic_metrics(ticker, info, financial_metrics):
     cashflow_df = get_statement_df(getattr(ticker, "cashflow", None))
     income_df = get_statement_df(getattr(ticker, "financials", None))
@@ -313,13 +301,10 @@ def calc_forensic_metrics(ticker, info, financial_metrics):
     if inventory_value is not None and cogs_value not in (None, 0):
         inv_days = round_nullable((inventory_value / cogs_value) * 365, 2)
 
-    debt_equity = financial_metrics.get("debtToEquity")
-    operating_margin = financial_metrics.get("operatingMargin")
-
     return {
         "cfoPat": cfo_pat,
-        "debtEquity": debt_equity,
-        "opmCurrent": operating_margin,
+        "debtEquity": financial_metrics.get("debtToEquity"),
+        "opmCurrent": financial_metrics.get("operatingMargin"),
         "opmPrev": None,
         "recvDaysCurrent": recv_days,
         "recvDaysPrev": None,
@@ -335,12 +320,15 @@ def build_live_research(symbol: str, stock_meta: dict):
     yahoo_symbol = to_yahoo_symbol(symbol)
     ticker = yf.Ticker(yahoo_symbol)
 
-    hist = ticker.history(period="1y", interval="1d", auto_adjust=False)
-    info = get_info_dict(ticker)
+    try:
+        hist = ticker.history(period="1y", interval="1d", auto_adjust=False)
+    except Exception:
+        hist = pd.DataFrame()
 
     if hist is None or hist.empty:
         raise Exception(f"No history data returned for {yahoo_symbol}")
 
+    info = get_info_dict(ticker)
     series = build_series_from_history(hist)
 
     latest = series[-1] if series else {}
@@ -373,16 +361,16 @@ def build_live_research(symbol: str, stock_meta: dict):
         "debtToEquity": round_nullable(info.get("debtToEquity"), 2),
         "salesGrowthYoY": round_nullable(
             (info.get("revenueGrowth") * 100) if info.get("revenueGrowth") is not None else None,
-            2
+            2,
         ),
         "currentRatio": round_nullable(info.get("currentRatio"), 2),
         "netMargin": round_nullable(
             (info.get("profitMargins") * 100) if info.get("profitMargins") is not None else None,
-            2
+            2,
         ),
         "operatingMargin": round_nullable(
             (info.get("operatingMargins") * 100) if info.get("operatingMargins") is not None else None,
-            2
+            2,
         ),
         "dividendYield": calc_dividend_yield(info, cmp_price, fb),
     }
@@ -392,16 +380,20 @@ def build_live_research(symbol: str, stock_meta: dict):
     financial_score = calc_financial_score(financial_metrics)
     forensic_score = derive_forensic_score(financial_metrics)
 
+    sector = info.get("sector") or stock_meta.get("sector") or ""
+    industry = info.get("industry") or stock_meta.get("industry") or stock_meta.get("basicIndustry") or None
+    description = info.get("longBusinessSummary") or stock_meta.get("description") or ""
+
     result = {
         "symbol": symbol.upper(),
         "exchange": "NSE",
         "asOf": datetime.now(timezone.utc).isoformat(),
         "company": {
             "name": info.get("longName") or stock_meta.get("name") or symbol.upper(),
-            "sector": info.get("sector") or stock_meta.get("sector"),
-            "industry": info.get("industry"),
+            "sector": sector,
+            "industry": industry,
             "marketCapCr": market_cap_to_cr(info.get("marketCap")),
-            "description": info.get("longBusinessSummary") or ""
+            "description": description,
         },
         "overview": {
             "cmp": round_nullable(cmp_price, 2),
@@ -411,7 +403,7 @@ def build_live_research(symbol: str, stock_meta: dict):
             "low": round_nullable(day_low, 2),
             "prevClose": round_nullable(prev_close, 2),
             "week52High": round_nullable(max([x["h"] for x in series]), 2) if series else None,
-            "week52Low": round_nullable(min([x["l"] for x in series]), 2) if series else None
+            "week52Low": round_nullable(min([x["l"] for x in series]), 2) if series else None,
         },
         "technical": {
             "sma20": round_nullable(sma20, 2),
@@ -422,7 +414,7 @@ def build_live_research(symbol: str, stock_meta: dict):
             "cmpVs200Sma": cmp_price > sma200 if cmp_price is not None and sma200 is not None else None,
             "rsi14": round_nullable(rsi14, 2),
             "trendLabel": derive_trend_label(cmp_price, sma20, sma50, sma200, rsi14),
-            "trendScore": derive_trend_score(cmp_price, sma20, sma50, sma200, rsi14)
+            "trendScore": derive_trend_score(cmp_price, sma20, sma50, sma200, rsi14),
         },
         "financial": {
             "pe": financial_metrics["pe"],
@@ -442,14 +434,6 @@ def build_live_research(symbol: str, stock_meta: dict):
         "forensic": {
             "score": forensic_score,
             "grade": derive_forensic_grade(forensic_score),
-            # Old summary labels removed to favor metric-style view
-            # "cashFlowQuality": derive_cashflow_quality(financial_metrics),
-            # "earningsQuality": derive_earnings_quality(financial_metrics),
-            # "leverageCheck": "Pass" if financial_metrics["debtToEquity"] is not None and financial_metrics["debtToEquity"] < 1 else "Watch",
-            # "marginStability": derive_margin_stability(financial_metrics),
-            # "redFlags": derive_red_flags(financial_metrics),
-
-            # Metric fields you asked for
             "cfoPat": forensic_metrics["cfoPat"],
             "debtEquity": forensic_metrics["debtEquity"],
             "opmPrev": forensic_metrics["opmPrev"],
@@ -458,15 +442,15 @@ def build_live_research(symbol: str, stock_meta: dict):
             "recvDaysCurrent": forensic_metrics["recvDaysCurrent"],
             "invDaysPrev": forensic_metrics["invDaysPrev"],
             "invDaysCurrent": forensic_metrics["invDaysCurrent"],
-            "pledgePct": forensic_metrics["pledgePct"]
+            "pledgePct": forensic_metrics["pledgePct"],
         },
         "chart": {
             "resolution": "D",
             "range": "1Y",
-            "series": series[-180:]
+            "series": series[-180:],
         },
         "source": "cache+yfinance+fallback",
-        "cacheStatus": "live"
+        "cacheStatus": "live",
     }
 
     return result
