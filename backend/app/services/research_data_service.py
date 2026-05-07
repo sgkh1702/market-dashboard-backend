@@ -7,17 +7,11 @@ import pandas as pd
 import yfinance as yf
 
 from app.utils.indicators import sma, rsi, round_nullable
-from app.utils.scoring import (
-    derive_trend_label,
-    derive_trend_score,
-    derive_forensic_score,
-    derive_forensic_grade,
-)
+from app.utils.scoring import derive_trend_label, derive_trend_score, derive_forensic_score, derive_forensic_grade
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 CACHE_DIR = BASE_DIR / "data" / "cache" / "stocks"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
 CACHE_TTL_SECONDS = 6 * 60 * 60
 
 
@@ -30,7 +24,7 @@ def cache_file(symbol: str) -> Path:
 
 
 def is_cache_fresh(path: Path, max_age_seconds=CACHE_TTL_SECONDS) -> bool:
-    return path.exists() and (time.time() - path.stat().st_mtime) <= max_age_seconds
+    return path.exists() and time.time() - path.stat().st_mtime < max_age_seconds
 
 
 def load_cache(symbol: str):
@@ -51,7 +45,7 @@ def market_cap_to_cr(value):
     if value is None:
         return None
     try:
-        return round(value / 10000000, 2)
+        return round(value / 10_000_000, 2)
     except Exception:
         return None
 
@@ -59,20 +53,17 @@ def market_cap_to_cr(value):
 def build_series_from_history(hist_df):
     if hist_df is None or hist_df.empty:
         return []
-
     series = []
     for idx, row in hist_df.iterrows():
         ts = int(idx.to_pydatetime().replace(tzinfo=timezone.utc).timestamp())
-        series.append(
-            {
-                "t": ts,
-                "o": float(row["Open"]) if pd.notna(row["Open"]) else 0.0,
-                "h": float(row["High"]) if pd.notna(row["High"]) else 0.0,
-                "l": float(row["Low"]) if pd.notna(row["Low"]) else 0.0,
-                "c": float(row["Close"]) if pd.notna(row["Close"]) else 0.0,
-                "v": float(row["Volume"]) if pd.notna(row["Volume"]) else 0.0,
-            }
-        )
+        series.append({
+            "t": ts,
+            "o": float(row["Open"]) if pd.notna(row["Open"]) else 0.0,
+            "h": float(row["High"]) if pd.notna(row["High"]) else 0.0,
+            "l": float(row["Low"]) if pd.notna(row["Low"]) else 0.0,
+            "c": float(row["Close"]) if pd.notna(row["Close"]) else 0.0,
+            "v": float(row["Volume"]) if pd.notna(row["Volume"]) else 0.0,
+        })
     return series
 
 
@@ -98,14 +89,12 @@ def get_statement_df(statement):
 def get_latest_statement_value(df, possible_labels):
     if df is None or df.empty:
         return None
-
     try:
         latest_col = df.columns[0]
     except Exception:
         return None
 
     normalized_index = {str(idx).strip().lower(): idx for idx in df.index}
-
     for label in possible_labels:
         key = str(label).strip().lower()
         if key in normalized_index:
@@ -119,15 +108,11 @@ def get_latest_statement_value(df, possible_labels):
     return None
 
 
-def fallback_fundamentals(symbol: str):
-    s = symbol.upper()
-    if s == "RELIANCE":
-        return {
-            "roe": 9.47,
-            "roce": 11.82,
-            "roa": 3.94,
-            "dividendYield": 0.42,
-        }
+def fallback_profile(symbol: str) -> dict:
+    return {}
+
+
+def fallback_fundamentals(symbol: str) -> dict:
     return {}
 
 
@@ -135,6 +120,12 @@ def calc_roe(info, fb):
     val = info.get("returnOnEquity")
     if val is not None:
         return round_nullable(val * 100, 2)
+
+    net_income = info.get("netIncomeToCommon") or info.get("netIncome")
+    equity = info.get("totalStockholderEquity")
+    if net_income is not None and equity not in (None, 0):
+        return round_nullable((net_income / equity) * 100, 2)
+
     return fb.get("roe")
 
 
@@ -142,6 +133,12 @@ def calc_roa(info, fb):
     val = info.get("returnOnAssets")
     if val is not None:
         return round_nullable(val * 100, 2)
+
+    net_income = info.get("netIncomeToCommon") or info.get("netIncome")
+    total_assets = info.get("totalAssets")
+    if net_income is not None and total_assets not in (None, 0):
+        return round_nullable((net_income / total_assets) * 100, 2)
+
     return fb.get("roa")
 
 
@@ -149,6 +146,15 @@ def calc_roce(info, fb):
     val = info.get("returnOnCapitalEmployed")
     if val is not None:
         return round_nullable(val * 100, 2)
+
+    ebit = info.get("ebit") or info.get("operatingIncome")
+    total_assets = info.get("totalAssets")
+    current_liabilities = info.get("totalCurrentLiabilities")
+
+    if ebit is not None and total_assets is not None and current_liabilities is not None:
+        capital_employed = total_assets - current_liabilities
+        if capital_employed not in (None, 0):
+            return round_nullable((ebit / capital_employed) * 100, 2)
 
     operating_income = info.get("operatingIncome")
     total_debt = info.get("totalDebt")
@@ -177,7 +183,6 @@ def calc_dividend_yield(info, cmp_price, fb):
 
 def calc_financial_score(fin):
     score = 0
-
     pe = fin.get("pe")
     pb = fin.get("pb")
     roe = fin.get("roe")
@@ -190,25 +195,25 @@ def calc_financial_score(fin):
     op_margin = fin.get("operatingMargin")
     div_yield = fin.get("dividendYield")
 
-    if pe is not None and 0 < pe <= 30:
+    if pe is not None and pe > 0 and pe < 30:
         score += 10
-    if pb is not None and 0 < pb <= 5:
+    if pb is not None and pb > 0 and pb < 5:
         score += 5
-    if roe is not None and roe >= 10:
+    if roe is not None and roe > 10:
         score += 15
-    if roce is not None and roce >= 10:
+    if roce is not None and roce > 10:
         score += 15
-    if roa is not None and roa >= 3:
+    if roa is not None and roa > 3:
         score += 10
-    if debt is not None and debt <= 1:
+    if debt is not None and debt < 1:
         score += 10
-    if growth is not None and growth >= 5:
+    if growth is not None and growth > 5:
         score += 10
-    if current_ratio is not None and current_ratio >= 1:
+    if current_ratio is not None and current_ratio > 1:
         score += 5
-    if net_margin is not None and net_margin >= 5:
+    if net_margin is not None and net_margin > 5:
         score += 10
-    if op_margin is not None and op_margin >= 8:
+    if op_margin is not None and op_margin > 8:
         score += 5
     if div_yield is not None and div_yield > 0:
         score += 5
@@ -244,12 +249,12 @@ def calc_forensic_metrics(ticker, info, financial_metrics):
             "Net Cash Provided By Operating Activities",
         ],
     )
-
     pat_value = get_latest_statement_value(
         income_df,
         [
             "Net Income",
             "Net Income Common Stockholders",
+            "Net Income From Continuing Operations",
             "Net Income From Continuing Operations Net Minority Interest",
         ],
     )
@@ -258,40 +263,10 @@ def calc_forensic_metrics(ticker, info, financial_metrics):
     if cfo_value is not None and pat_value not in (None, 0):
         cfo_pat = round_nullable(cfo_value / pat_value, 2)
 
-    receivables_value = get_latest_statement_value(
-        balance_df,
-        [
-            "Accounts Receivable",
-            "Net Receivables",
-            "Receivables",
-        ],
-    )
-
-    inventory_value = get_latest_statement_value(
-        balance_df,
-        [
-            "Inventory",
-            "Inventories",
-        ],
-    )
-
-    revenue_value = get_latest_statement_value(
-        income_df,
-        [
-            "Total Revenue",
-            "Operating Revenue",
-            "Revenue",
-        ],
-    )
-
-    cogs_value = get_latest_statement_value(
-        income_df,
-        [
-            "Cost Of Revenue",
-            "Cost Of Goods Sold",
-            "Cost Of Sales",
-        ],
-    )
+    receivables_value = get_latest_statement_value(balance_df, ["Accounts Receivable", "Net Receivables", "Receivables"])
+    inventory_value = get_latest_statement_value(balance_df, ["Inventory", "Inventories"])
+    revenue_value = get_latest_statement_value(income_df, ["Total Revenue", "Operating Revenue", "Revenue"])
+    cogs_value = get_latest_statement_value(income_df, ["Cost Of Revenue", "Cost Of Goods Sold", "Cost Of Sales"])
 
     recv_days = None
     if receivables_value is not None and revenue_value not in (None, 0):
@@ -351,94 +326,54 @@ def build_live_research(symbol: str, stock_meta: dict):
     rsi14 = rsi(series, 14)
 
     fb = fallback_fundamentals(symbol)
-
-    def fallback_pe(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 24.08
-        return None
-
-    def fallback_pb(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 2.22
-        return None
-
-    def fallback_debt_to_equity(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 36.65
-        return None
-
-    def fallback_sales_growth(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 12.5
-        return None
-
-    def fallback_current_ratio(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 1.1
-        return None
-
-    def fallback_net_margin(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 7.64
-        return None
-
-    def fallback_operating_margin(symbol):
-        if symbol.upper() == "RELIANCE":
-            return 9.98
-        return None
+    fp = fallback_profile(symbol)
 
     financial_metrics = {
-    "pe": round_nullable(info.get("trailingPE") or fallback_pe(symbol), 2),
-    "pb": round_nullable(info.get("priceToBook") or fallback_pb(symbol), 2),
-    "roe": calc_roe(info, fb),
-    "roce": calc_roce(info, fb),
-    "roa": calc_roa(info, fb),
-    "debtToEquity": round_nullable(info.get("debtToEquity") or fallback_debt_to_equity(symbol), 2),
-    "salesGrowthYoY": round_nullable(
-        (info.get("revenueGrowth") * 100)
-        if info.get("revenueGrowth") is not None
-        else fallback_sales_growth(symbol),
-        2,
-    ),
-    "currentRatio": round_nullable(info.get("currentRatio") or fallback_current_ratio(symbol), 2),
-    "netMargin": round_nullable(
-        (info.get("profitMargins") * 100)
-        if info.get("profitMargins") is not None
-        else fallback_net_margin(symbol),
-        2,
-    ),
-    "operatingMargin": round_nullable(
-        (info.get("operatingMargins") * 100)
-        if info.get("operatingMargins") is not None
-        else fallback_operating_margin(symbol),
-        2,
-    ),
-    "dividendYield": calc_dividend_yield(info, cmp_price, fb),
-}
-
-    forensic_metrics = calc_forensic_metrics(ticker, info, financial_metrics)
+        "pe": round_nullable(info.get("trailingPE") or fb.get("pe"), 2),
+        "pb": round_nullable(info.get("priceToBook") or fb.get("pb"), 2),
+        "roe": calc_roe(info, fb),
+        "roce": calc_roce(info, fb),
+        "roa": calc_roa(info, fb),
+        "debtToEquity": round_nullable(info.get("debtToEquity") or fb.get("debtToEquity"), 2),
+        "salesGrowthYoY": round_nullable(
+            info.get("revenueGrowth") * 100 if info.get("revenueGrowth") is not None else fb.get("salesGrowthYoY"),
+            2,
+        ),
+        "currentRatio": round_nullable(info.get("currentRatio") or fb.get("currentRatio"), 2),
+        "netMargin": round_nullable(
+            info.get("profitMargins") * 100 if info.get("profitMargins") is not None else fb.get("netMargin"),
+            2,
+        ),
+        "operatingMargin": round_nullable(
+            info.get("operatingMargins") * 100 if info.get("operatingMargins") is not None else fb.get("operatingMargin"),
+            2,
+        ),
+        "dividendYield": calc_dividend_yield(info, cmp_price, fb),
+    }
 
     financial_score = calc_financial_score(financial_metrics)
+    forensic_metrics = calc_forensic_metrics(ticker, info, financial_metrics)
     forensic_score = derive_forensic_score(financial_metrics)
+    financial_grade = calc_financial_grade(financial_score)
+    forensic_grade = derive_forensic_grade(forensic_score)
 
     company_name = (
         info.get("longName")
         or info.get("shortName")
         or stock_meta.get("name")
         or stock_meta.get("companyName")
-        or stock_meta.get("company_name")
+        or stock_meta.get("companyname")
+        or fp.get("name")
         or symbol.upper()
     )
-
     sector = (
         info.get("sector")
         or stock_meta.get("sector")
         or stock_meta.get("Sector")
         or stock_meta.get("industry")
         or stock_meta.get("Industry")
-        or ""
+        or fp.get("sector")
     )
-
     industry = (
         info.get("industry")
         or stock_meta.get("industry")
@@ -447,25 +382,26 @@ def build_live_research(symbol: str, stock_meta: dict):
         or stock_meta.get("BasicIndustry")
         or stock_meta.get("subIndustry")
         or stock_meta.get("SubIndustry")
-        or None
+        or fp.get("industry")
     )
-
     description = (
         info.get("longBusinessSummary")
         or stock_meta.get("description")
         or stock_meta.get("business")
         or stock_meta.get("about")
+        or fp.get("description")
         or ""
     )
+
     result = {
         "symbol": symbol.upper(),
         "exchange": "NSE",
         "asOf": datetime.now(timezone.utc).isoformat(),
         "company": {
             "name": company_name,
-            "sector": sector,
+            "sector": sector or "",
             "industry": industry,
-            "marketCapCr": market_cap_to_cr(info.get("marketCap")),
+            "marketCapCr": market_cap_to_cr(info.get("marketCap") or fp.get("marketCapCr")),
             "description": description,
         },
         "overview": {
@@ -475,8 +411,8 @@ def build_live_research(symbol: str, stock_meta: dict):
             "high": round_nullable(day_high, 2),
             "low": round_nullable(day_low, 2),
             "prevClose": round_nullable(prev_close, 2),
-            "week52High": round_nullable(max([x["h"] for x in series]), 2) if series else None,
-            "week52Low": round_nullable(min([x["l"] for x in series]), 2) if series else None,
+            "week52High": round_nullable(max(x["h"] for x in series), 2) if series else None,
+            "week52Low": round_nullable(min(x["l"] for x in series), 2) if series else None,
         },
         "technical": {
             "sma20": round_nullable(sma20, 2),
@@ -502,11 +438,11 @@ def build_live_research(symbol: str, stock_meta: dict):
             "operatingMargin": financial_metrics["operatingMargin"],
             "dividendYield": financial_metrics["dividendYield"],
             "score": financial_score,
-            "grade": calc_financial_grade(financial_score),
+            "grade": financial_grade,
         },
         "forensic": {
             "score": forensic_score,
-            "grade": derive_forensic_grade(forensic_score),
+            "grade": forensic_grade,
             "cfoPat": forensic_metrics["cfoPat"],
             "debtEquity": forensic_metrics["debtEquity"],
             "opmPrev": forensic_metrics["opmPrev"],
@@ -520,7 +456,7 @@ def build_live_research(symbol: str, stock_meta: dict):
         "chart": {
             "resolution": "D",
             "range": "1Y",
-            "series": series[-180:],
+            "series": series,
         },
         "source": "cache+yfinance+fallback",
         "cacheStatus": "live",
@@ -531,7 +467,6 @@ def build_live_research(symbol: str, stock_meta: dict):
 
 def get_stock_research_data(symbol: str, stock_meta: dict, force_refresh: bool = False):
     path = cache_file(symbol)
-
     if not force_refresh and is_cache_fresh(path):
         cached = load_cache(symbol)
         if cached:
