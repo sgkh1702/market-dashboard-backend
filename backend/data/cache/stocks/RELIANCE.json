@@ -1,38 +1,38 @@
 {
   "symbol": "RELIANCE",
   "exchange": "NSE",
-  "asOf": "2026-04-29T10:45:03.425350+00:00",
+  "asOf": "2026-05-07T13:34:07.010305+00:00",
   "company": {
     "name": "Reliance Industries Limited",
     "sector": "Energy",
     "industry": "Oil & Gas Refining & Marketing",
-    "marketCapCr": 1928918.68,
+    "marketCapCr": 1943533.52,
     "description": "Reliance Industries Limited engages in the hydrocarbon exploration and production, oil and chemicals, retail, and digital service businesses worldwide. It operates through Oil to Chemicals, Oil and Gas, Retail, Digital Services, and Others segments. The company offers refining and marketing products, including liquefied petroleum gas, propylene, naphtha, gasoline, jet/aviation turbine fuel, kerosine oil, diesel, sulphur, and petroleum coke. It also provides polymers, including high-density and low-density polyethylene (PE), linear low-density PE, homopolymer, random and impact copolymer, and polyvinyl chloride; fibre intermediates, such as purified terephthalic acid, and ethylene glycols and oxide; aromatics, such as paraxylene, ortho xylene, benzene, and linear alkyl benzene and paraffin; and textiles comprising fabrics, apparel, and auto furnishings. In addition, the company offers elastomers, such as polybutadiene rubber, styrene butadiene rubber, and butyl rubber; fibre and yarn polyesters; and bioenergy solutions, consisting of compressed biogas, and pellets and briquettes. Further, it engages in oil and gas exploration and production activities; and operates various stores comprising supermarket, hypermarket, wholesale cash and carry, specialty, and online stores, as well as stores that offer apparel, beauty and cosmetics, accessories, footwear, consumer electronics, and others. Additionally, the company operates media and entertainment platforms, and Network18 and television channels; publishes magazines; and offers highway hospitality and fleet management services. It also provides digital services, including connectivity, fibre, mobile devices, apps, business, and other digital solutions. The company was founded in 1957 and is based in Mumbai, India."
   },
   "overview": {
-    "cmp": 1425.4,
-    "change": 36.5,
-    "changePercent": 2.63,
-    "high": 1433.8,
-    "low": 1391.3,
-    "prevClose": 1388.9,
+    "cmp": 1436.2,
+    "change": -1.7,
+    "changePercent": -0.12,
+    "high": 1449.5,
+    "low": 1430.3,
+    "prevClose": 1437.9,
     "week52High": 1611.8,
     "week52Low": 1290.0
   },
   "technical": {
-    "sma20": 1349.92,
-    "sma50": 1382.54,
-    "sma200": 1435.7,
+    "sma20": 1382.01,
+    "sma50": 1384.2,
+    "sma200": 1433.82,
     "cmpVs20Sma": true,
     "cmpVs50Sma": true,
-    "cmpVs200Sma": false,
-    "rsi14": 64.01,
+    "cmpVs200Sma": true,
+    "rsi14": 66.33,
     "trendLabel": "Bullish",
-    "trendScore": 65
+    "trendScore": 85
   },
   "financial": {
-    "pe": 23.87,
-    "pb": 2.2,
+    "pe": 24.07,
+    "pb": 2.15,
     "roe": 9.14,
     "roce": 11.82,
     "roa": 3.67,
@@ -41,7 +41,7 @@
     "currentRatio": 1.1,
     "netMargin": 7.64,
     "operatingMargin": 9.98,
-    "dividendYield": 40.0,
+    "dividendYield": 38.0,
     "score": 75,
     "grade": "B"
   },
@@ -62,54 +62,6 @@
     "resolution": "D",
     "range": "1Y",
     "series": [
-      {
-        "t": 1754352000,
-        "o": 1411.0,
-        "h": 1411.0,
-        "l": 1388.0999755859375,
-        "c": 1391.699951171875,
-        "v": 9315972.0
-      },
-      {
-        "t": 1754438400,
-        "o": 1391.9000244140625,
-        "h": 1395.9000244140625,
-        "l": 1383.300048828125,
-        "c": 1392.800048828125,
-        "v": 5834312.0
-      },
-      {
-        "t": 1754524800,
-        "o": 1387.699951171875,
-        "h": 1393.699951171875,
-        "l": 1366.0,
-        "c": 1389.4000244140625,
-        "v": 9976705.0
-      },
-      {
-        "t": 1754611200,
-        "o": 1385.0,
-        "h": 1397.199951171875,
-        "l": 1365.0,
-        "c": 1367.800048828125,
-        "v": 8793606.0
-      },
-      {
-        "t": 1754870400,
-        "o": 1370.0,
-        "h": 1388.0,
-        "l": 1361.199951171875,
-        "c": 1386.199951171875,
-        "v": 9997486.0
-      },
-      {
-        "t": 1754956800,
-        "o": 1381.9000244140625,
-        "h": 1401.9000244140625,
-        "l": 1375.199951171875,
-        "c": 1380.4000244140625,
-        "v": 12244664.0
-      },
       {
         "t": 1755043200,
         "o": 1388.0,
@@ -1500,7 +1452,55 @@
         "h": 1433.800048828125,
         "l": 1391.300048828125,
         "c": 1425.4000244140625,
-        "v": 30538735.0
+        "v": 30542143.0
+      },
+      {
+        "t": 1777507200,
+        "o": 1409.0,
+        "h": 1437.0,
+        "l": 1393.0999755859375,
+        "c": 1430.800048828125,
+        "v": 30957881.0
+      },
+      {
+        "t": 1777593600,
+        "o": 1430.800048828125,
+        "h": 1430.800048828125,
+        "l": 1430.800048828125,
+        "c": 1430.800048828125,
+        "v": 0.0
+      },
+      {
+        "t": 1777852800,
+        "o": 1433.4000244140625,
+        "h": 1467.4000244140625,
+        "l": 1433.4000244140625,
+        "c": 1463.0999755859375,
+        "v": 24035700.0
+      },
+      {
+        "t": 1777939200,
+        "o": 1460.0,
+        "h": 1473.4000244140625,
+        "l": 1450.0,
+        "c": 1463.5999755859375,
+        "v": 23543341.0
+      },
+      {
+        "t": 1778025600,
+        "o": 1463.0,
+        "h": 1473.300048828125,
+        "l": 1427.5,
+        "c": 1437.9000244140625,
+        "v": 14221786.0
+      },
+      {
+        "t": 1778112000,
+        "o": 1438.800048828125,
+        "h": 1449.5,
+        "l": 1430.300048828125,
+        "c": 1436.199951171875,
+        "v": 19811053.0
       }
     ]
   },
