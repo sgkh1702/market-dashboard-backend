@@ -297,9 +297,10 @@ function calculateFinancialScore(financial) {
 }
 
 function calculateOverallScore(technicalScore, financialScore, forensicScore) {
-  const values = [... technicalScore, financialScore, forensicScore]
+  const values = [technicalScore, financialScore, forensicScore]
     .map((x) => Number(x))
     .filter((x) => !isNaN(x));
+
   if (!values.length) return null;
   return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
 }
