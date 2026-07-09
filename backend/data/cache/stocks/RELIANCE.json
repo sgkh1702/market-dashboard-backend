@@ -1,49 +1,49 @@
 {
   "symbol": "RELIANCE",
   "exchange": "NSE",
-  "asOf": "2026-05-07T13:34:07.010305+00:00",
+  "asOf": "2026-07-09T07:24:11.451021+00:00",
   "company": {
     "name": "Reliance Industries Limited",
     "sector": "Energy",
     "industry": "Oil & Gas Refining & Marketing",
-    "marketCapCr": 1943533.52,
-    "description": "Reliance Industries Limited engages in the hydrocarbon exploration and production, oil and chemicals, retail, and digital service businesses worldwide. It operates through Oil to Chemicals, Oil and Gas, Retail, Digital Services, and Others segments. The company offers refining and marketing products, including liquefied petroleum gas, propylene, naphtha, gasoline, jet/aviation turbine fuel, kerosine oil, diesel, sulphur, and petroleum coke. It also provides polymers, including high-density and low-density polyethylene (PE), linear low-density PE, homopolymer, random and impact copolymer, and polyvinyl chloride; fibre intermediates, such as purified terephthalic acid, and ethylene glycols and oxide; aromatics, such as paraxylene, ortho xylene, benzene, and linear alkyl benzene and paraffin; and textiles comprising fabrics, apparel, and auto furnishings. In addition, the company offers elastomers, such as polybutadiene rubber, styrene butadiene rubber, and butyl rubber; fibre and yarn polyesters; and bioenergy solutions, consisting of compressed biogas, and pellets and briquettes. Further, it engages in oil and gas exploration and production activities; and operates various stores comprising supermarket, hypermarket, wholesale cash and carry, specialty, and online stores, as well as stores that offer apparel, beauty and cosmetics, accessories, footwear, consumer electronics, and others. Additionally, the company operates media and entertainment platforms, and Network18 and television channels; publishes magazines; and offers highway hospitality and fleet management services. It also provides digital services, including connectivity, fibre, mobile devices, apps, business, and other digital solutions. The company was founded in 1957 and is based in Mumbai, India."
+    "marketCapCr": 1746500.85,
+    "description": "Reliance Industries Limited engages in hydrocarbon exploration and production, petroleum refining and marketing, petrochemicals, advanced materials and composites, renewable, financial services, retail, and digital services worldwide. It operates through the Oil to Chemicals, Oil and Gas, Retail, Digital Services, and Others segments. The company is involved in refining and marketing products, including liquefied petroleum gas, propylene, naphtha, gasoline, jet/aviation turbine fuel, kerosine oil, diesel, sulfur, and petroleum coke. It also provides polymers comprising high-density and low-density polyethylene (PE), linear low-density PE, homopolymer, random and impact copolymer, and polyvinyl chloride; fiber intermediates that include purified terephthalic acid, and ethylene glycols and oxide; aromatics, such as paraxylene, ortho xylene, benzene, and linear alkyl benzene and paraffin; and textiles that consist of fabrics, apparel, and auto furnishings. In addition, the company offers elastomers, such as polybutadiene rubber, styrene butadiene rubber, and butyl rubber; fiber and yarn polyesters; and bioenergy solutions, including compressed biogas, and pellets and briquettes. Further, it engages in oil and gas exploration and production activities; operation of various stores comprising supermarkets, hypermarket, wholesale cash and carry, specialty, and online stores; operation of media and entertainment platforms, and Network18 and television channels; and publishing of magazines. Additionally, the company provides highway hospitality and fleet management services, as well as digital services, such as connectivity, fiber, mobile devices, apps, business, and other digital solutions. Reliance Industries Limited was founded in 1957 and is based in Mumbai, India."
   },
   "overview": {
-    "cmp": 1436.2,
-    "change": -1.7,
-    "changePercent": -0.12,
-    "high": 1449.5,
-    "low": 1430.3,
-    "prevClose": 1437.9,
+    "cmp": 1291.1,
+    "change": 15.2,
+    "changePercent": 1.19,
+    "high": 1296.5,
+    "low": 1274.2,
+    "prevClose": 1275.9,
     "week52High": 1611.8,
-    "week52Low": 1290.0
+    "week52Low": 1253.2
   },
   "technical": {
-    "sma20": 1382.01,
-    "sma50": 1384.2,
-    "sma200": 1433.82,
-    "cmpVs20Sma": true,
-    "cmpVs50Sma": true,
-    "cmpVs200Sma": true,
-    "rsi14": 66.33,
-    "trendLabel": "Bullish",
-    "trendScore": 85
+    "sma20": 1309.6,
+    "sma50": 1334.65,
+    "sma200": 1416.65,
+    "cmpVs20Sma": false,
+    "cmpVs50Sma": false,
+    "cmpVs200Sma": false,
+    "rsi14": 44.38,
+    "trendLabel": "Bearish",
+    "trendScore": 0
   },
   "financial": {
-    "pe": 24.07,
-    "pb": 2.15,
+    "pe": 22.18,
+    "pb": 1.93,
     "roe": 9.14,
-    "roce": 11.82,
+    "roce": null,
     "roa": 3.67,
     "debtToEquity": 36.65,
     "salesGrowthYoY": 12.5,
     "currentRatio": 1.1,
     "netMargin": 7.64,
     "operatingMargin": 9.98,
-    "dividendYield": 38.0,
-    "score": 75,
-    "grade": "B"
+    "dividendYield": 46.0,
+    "score": 60,
+    "grade": "C"
   },
   "forensic": {
     "score": 55,
@@ -55,13 +55,213 @@
     "recvDaysPrev": null,
     "recvDaysCurrent": 20.19,
     "invDaysPrev": null,
-    "invDaysCurrent": 81.64,
+    "invDaysCurrent": 77.44,
     "pledgePct": null
   },
   "chart": {
     "resolution": "D",
     "range": "1Y",
     "series": [
+      {
+        "t": 1752019200,
+        "o": 1536.699951171875,
+        "h": 1551.0,
+        "l": 1510.0999755859375,
+        "c": 1519.0,
+        "v": 8870660.0
+      },
+      {
+        "t": 1752105600,
+        "o": 1519.699951171875,
+        "h": 1524.699951171875,
+        "l": 1507.5,
+        "c": 1517.199951171875,
+        "v": 10047129.0
+      },
+      {
+        "t": 1752192000,
+        "o": 1512.0,
+        "h": 1515.0,
+        "l": 1490.300048828125,
+        "c": 1495.199951171875,
+        "v": 7234991.0
+      },
+      {
+        "t": 1752451200,
+        "o": 1492.199951171875,
+        "h": 1500.0,
+        "l": 1479.0999755859375,
+        "c": 1483.699951171875,
+        "v": 10311846.0
+      },
+      {
+        "t": 1752537600,
+        "o": 1486.199951171875,
+        "h": 1496.5,
+        "l": 1482.4000244140625,
+        "c": 1485.4000244140625,
+        "v": 8132454.0
+      },
+      {
+        "t": 1752624000,
+        "o": 1473.0,
+        "h": 1491.0,
+        "l": 1471.5,
+        "c": 1485.5999755859375,
+        "v": 10409983.0
+      },
+      {
+        "t": 1752710400,
+        "o": 1487.4000244140625,
+        "h": 1489.5999755859375,
+        "l": 1473.9000244140625,
+        "c": 1476.4000244140625,
+        "v": 11854613.0
+      },
+      {
+        "t": 1752796800,
+        "o": 1484.800048828125,
+        "h": 1484.800048828125,
+        "l": 1469.0999755859375,
+        "c": 1476.0,
+        "v": 10296318.0
+      },
+      {
+        "t": 1753056000,
+        "o": 1465.0,
+        "h": 1476.0,
+        "l": 1423.0999755859375,
+        "c": 1428.5999755859375,
+        "v": 22442744.0
+      },
+      {
+        "t": 1753142400,
+        "o": 1427.4000244140625,
+        "h": 1431.9000244140625,
+        "l": 1410.699951171875,
+        "c": 1412.800048828125,
+        "v": 20396320.0
+      },
+      {
+        "t": 1753228800,
+        "o": 1426.0,
+        "h": 1426.0,
+        "l": 1414.4000244140625,
+        "c": 1424.5999755859375,
+        "v": 8354596.0
+      },
+      {
+        "t": 1753315200,
+        "o": 1419.199951171875,
+        "h": 1423.0,
+        "l": 1396.0,
+        "c": 1402.9000244140625,
+        "v": 14740507.0
+      },
+      {
+        "t": 1753401600,
+        "o": 1398.9000244140625,
+        "h": 1401.0,
+        "l": 1384.0999755859375,
+        "c": 1391.699951171875,
+        "v": 11854722.0
+      },
+      {
+        "t": 1753660800,
+        "o": 1392.300048828125,
+        "h": 1407.800048828125,
+        "l": 1385.0,
+        "c": 1387.5999755859375,
+        "v": 7748361.0
+      },
+      {
+        "t": 1753747200,
+        "o": 1383.0,
+        "h": 1420.199951171875,
+        "l": 1383.0,
+        "c": 1417.0999755859375,
+        "v": 10750072.0
+      },
+      {
+        "t": 1753833600,
+        "o": 1418.0999755859375,
+        "h": 1423.300048828125,
+        "l": 1401.300048828125,
+        "c": 1410.0999755859375,
+        "v": 7209849.0
+      },
+      {
+        "t": 1753920000,
+        "o": 1388.0999755859375,
+        "h": 1402.5999755859375,
+        "l": 1382.199951171875,
+        "c": 1390.199951171875,
+        "v": 17065827.0
+      },
+      {
+        "t": 1754006400,
+        "o": 1386.9000244140625,
+        "h": 1405.9000244140625,
+        "l": 1384.300048828125,
+        "c": 1393.699951171875,
+        "v": 10321171.0
+      },
+      {
+        "t": 1754265600,
+        "o": 1395.0999755859375,
+        "h": 1416.0999755859375,
+        "l": 1391.699951171875,
+        "c": 1411.5,
+        "v": 6312820.0
+      },
+      {
+        "t": 1754352000,
+        "o": 1411.0,
+        "h": 1411.0,
+        "l": 1388.0999755859375,
+        "c": 1391.699951171875,
+        "v": 9315972.0
+      },
+      {
+        "t": 1754438400,
+        "o": 1391.9000244140625,
+        "h": 1395.9000244140625,
+        "l": 1383.300048828125,
+        "c": 1392.800048828125,
+        "v": 5834312.0
+      },
+      {
+        "t": 1754524800,
+        "o": 1387.699951171875,
+        "h": 1393.699951171875,
+        "l": 1366.0,
+        "c": 1389.4000244140625,
+        "v": 9976705.0
+      },
+      {
+        "t": 1754611200,
+        "o": 1385.0,
+        "h": 1397.199951171875,
+        "l": 1365.0,
+        "c": 1367.800048828125,
+        "v": 8793606.0
+      },
+      {
+        "t": 1754870400,
+        "o": 1370.0,
+        "h": 1388.0,
+        "l": 1361.199951171875,
+        "c": 1386.199951171875,
+        "v": 9997486.0
+      },
+      {
+        "t": 1754956800,
+        "o": 1381.9000244140625,
+        "h": 1401.9000244140625,
+        "l": 1375.199951171875,
+        "c": 1380.4000244140625,
+        "v": 12244664.0
+      },
       {
         "t": 1755043200,
         "o": 1388.0,
@@ -1500,7 +1700,367 @@
         "h": 1449.5,
         "l": 1430.300048828125,
         "c": 1436.199951171875,
-        "v": 19811053.0
+        "v": 19816903.0
+      },
+      {
+        "t": 1778198400,
+        "o": 1426.0,
+        "h": 1442.800048828125,
+        "l": 1417.5,
+        "c": 1435.199951171875,
+        "v": 8663105.0
+      },
+      {
+        "t": 1778457600,
+        "o": 1420.0,
+        "h": 1428.0,
+        "l": 1382.0,
+        "c": 1388.199951171875,
+        "v": 15261787.0
+      },
+      {
+        "t": 1778544000,
+        "o": 1392.0,
+        "h": 1393.5,
+        "l": 1360.300048828125,
+        "c": 1364.0,
+        "v": 24357500.0
+      },
+      {
+        "t": 1778630400,
+        "o": 1361.4000244140625,
+        "h": 1372.4000244140625,
+        "l": 1352.4000244140625,
+        "c": 1358.800048828125,
+        "v": 13797989.0
+      },
+      {
+        "t": 1778716800,
+        "o": 1365.199951171875,
+        "h": 1378.0,
+        "l": 1358.4000244140625,
+        "c": 1361.800048828125,
+        "v": 17303059.0
+      },
+      {
+        "t": 1778803200,
+        "o": 1356.800048828125,
+        "h": 1364.800048828125,
+        "l": 1329.199951171875,
+        "c": 1336.4000244140625,
+        "v": 19976192.0
+      },
+      {
+        "t": 1779062400,
+        "o": 1334.0,
+        "h": 1342.0,
+        "l": 1318.699951171875,
+        "c": 1335.9000244140625,
+        "v": 13022473.0
+      },
+      {
+        "t": 1779148800,
+        "o": 1338.699951171875,
+        "h": 1344.0,
+        "l": 1318.4000244140625,
+        "c": 1322.699951171875,
+        "v": 21665501.0
+      },
+      {
+        "t": 1779235200,
+        "o": 1318.699951171875,
+        "h": 1362.9000244140625,
+        "l": 1312.5999755859375,
+        "c": 1359.699951171875,
+        "v": 13248515.0
+      },
+      {
+        "t": 1779321600,
+        "o": 1367.199951171875,
+        "h": 1370.9000244140625,
+        "l": 1345.199951171875,
+        "c": 1349.5999755859375,
+        "v": 17150630.0
+      },
+      {
+        "t": 1779408000,
+        "o": 1350.0,
+        "h": 1367.4000244140625,
+        "l": 1349.0999755859375,
+        "c": 1354.5,
+        "v": 7105813.0
+      },
+      {
+        "t": 1779667200,
+        "o": 1366.800048828125,
+        "h": 1371.0999755859375,
+        "l": 1357.0,
+        "c": 1367.0,
+        "v": 6750071.0
+      },
+      {
+        "t": 1779753600,
+        "o": 1360.0999755859375,
+        "h": 1368.5,
+        "l": 1352.4000244140625,
+        "c": 1356.300048828125,
+        "v": 13769747.0
+      },
+      {
+        "t": 1779840000,
+        "o": 1353.0,
+        "h": 1361.0,
+        "l": 1348.5999755859375,
+        "c": 1350.5,
+        "v": 13215138.0
+      },
+      {
+        "t": 1779926400,
+        "o": 1350.5,
+        "h": 1350.5,
+        "l": 1350.5,
+        "c": 1350.5,
+        "v": 0.0
+      },
+      {
+        "t": 1780012800,
+        "o": 1364.0,
+        "h": 1369.0,
+        "l": 1317.0,
+        "c": 1321.199951171875,
+        "v": 42634247.0
+      },
+      {
+        "t": 1780272000,
+        "o": 1332.5,
+        "h": 1335.5,
+        "l": 1318.5,
+        "c": 1320.0,
+        "v": 10700603.0
+      },
+      {
+        "t": 1780358400,
+        "o": 1307.699951171875,
+        "h": 1327.800048828125,
+        "l": 1300.300048828125,
+        "c": 1314.5999755859375,
+        "v": 23302785.0
+      },
+      {
+        "t": 1780444800,
+        "o": 1315.0,
+        "h": 1324.0,
+        "l": 1301.0,
+        "c": 1313.199951171875,
+        "v": 20012293.0
+      },
+      {
+        "t": 1780531200,
+        "o": 1301.0,
+        "h": 1311.199951171875,
+        "l": 1293.0999755859375,
+        "c": 1303.699951171875,
+        "v": 23474327.0
+      },
+      {
+        "t": 1780617600,
+        "o": 1304.5,
+        "h": 1306.0,
+        "l": 1288.0,
+        "c": 1291.0,
+        "v": 17785223.0
+      },
+      {
+        "t": 1780876800,
+        "o": 1277.0,
+        "h": 1282.5999755859375,
+        "l": 1259.199951171875,
+        "c": 1263.300048828125,
+        "v": 16494759.0
+      },
+      {
+        "t": 1780963200,
+        "o": 1269.0,
+        "h": 1274.199951171875,
+        "l": 1257.5,
+        "c": 1269.199951171875,
+        "v": 23620214.0
+      },
+      {
+        "t": 1781049600,
+        "o": 1275.0,
+        "h": 1300.5,
+        "l": 1254.4000244140625,
+        "c": 1258.800048828125,
+        "v": 21012796.0
+      },
+      {
+        "t": 1781136000,
+        "o": 1258.0,
+        "h": 1276.0,
+        "l": 1253.199951171875,
+        "c": 1263.0,
+        "v": 13117486.0
+      },
+      {
+        "t": 1781222400,
+        "o": 1277.0,
+        "h": 1297.0,
+        "l": 1262.5,
+        "c": 1293.0,
+        "v": 11988785.0
+      },
+      {
+        "t": 1781481600,
+        "o": 1315.300048828125,
+        "h": 1325.0,
+        "l": 1303.300048828125,
+        "c": 1307.0,
+        "v": 18633321.0
+      },
+      {
+        "t": 1781568000,
+        "o": 1313.4000244140625,
+        "h": 1333.4000244140625,
+        "l": 1306.4000244140625,
+        "c": 1328.800048828125,
+        "v": 18513223.0
+      },
+      {
+        "t": 1781654400,
+        "o": 1333.0,
+        "h": 1334.0,
+        "l": 1317.0,
+        "c": 1332.699951171875,
+        "v": 10029170.0
+      },
+      {
+        "t": 1781740800,
+        "o": 1330.0,
+        "h": 1333.9000244140625,
+        "l": 1322.0,
+        "c": 1328.0999755859375,
+        "v": 15494549.0
+      },
+      {
+        "t": 1781827200,
+        "o": 1328.0,
+        "h": 1338.199951171875,
+        "l": 1305.300048828125,
+        "c": 1309.5,
+        "v": 24887034.0
+      },
+      {
+        "t": 1782086400,
+        "o": 1316.699951171875,
+        "h": 1344.9000244140625,
+        "l": 1314.0999755859375,
+        "c": 1326.5,
+        "v": 12931213.0
+      },
+      {
+        "t": 1782172800,
+        "o": 1328.9000244140625,
+        "h": 1333.0,
+        "l": 1304.0,
+        "c": 1309.5,
+        "v": 15400184.0
+      },
+      {
+        "t": 1782259200,
+        "o": 1305.699951171875,
+        "h": 1322.0,
+        "l": 1297.5,
+        "c": 1313.5999755859375,
+        "v": 11030917.0
+      },
+      {
+        "t": 1782345600,
+        "o": 1318.0,
+        "h": 1328.0,
+        "l": 1314.5999755859375,
+        "c": 1318.0999755859375,
+        "v": 12694362.0
+      },
+      {
+        "t": 1782432000,
+        "o": 1318.0999755859375,
+        "h": 1318.0999755859375,
+        "l": 1318.0999755859375,
+        "c": 1318.0999755859375,
+        "v": 0.0
+      },
+      {
+        "t": 1782691200,
+        "o": 1308.0,
+        "h": 1313.699951171875,
+        "l": 1292.5999755859375,
+        "c": 1301.0,
+        "v": 13757656.0
+      },
+      {
+        "t": 1782777600,
+        "o": 1306.9000244140625,
+        "h": 1306.9000244140625,
+        "l": 1290.0,
+        "c": 1293.9000244140625,
+        "v": 15695263.0
+      },
+      {
+        "t": 1782864000,
+        "o": 1298.9000244140625,
+        "h": 1312.199951171875,
+        "l": 1296.5,
+        "c": 1308.0,
+        "v": 7001401.0
+      },
+      {
+        "t": 1782950400,
+        "o": 1310.0,
+        "h": 1313.199951171875,
+        "l": 1299.0,
+        "c": 1303.5,
+        "v": 17795024.0
+      },
+      {
+        "t": 1783036800,
+        "o": 1312.0,
+        "h": 1312.0,
+        "l": 1302.0,
+        "c": 1304.0,
+        "v": 7839550.0
+      },
+      {
+        "t": 1783296000,
+        "o": 1304.0,
+        "h": 1325.5999755859375,
+        "l": 1299.4000244140625,
+        "c": 1321.300048828125,
+        "v": 7610709.0
+      },
+      {
+        "t": 1783382400,
+        "o": 1323.5,
+        "h": 1328.0,
+        "l": 1304.0999755859375,
+        "c": 1308.4000244140625,
+        "v": 14335554.0
+      },
+      {
+        "t": 1783468800,
+        "o": 1297.0,
+        "h": 1302.300048828125,
+        "l": 1271.5999755859375,
+        "c": 1275.9000244140625,
+        "v": 19960868.0
+      },
+      {
+        "t": 1783555200,
+        "o": 1277.0999755859375,
+        "h": 1296.5,
+        "l": 1274.199951171875,
+        "c": 1291.0999755859375,
+        "v": 8161612.0
       }
     ]
   },

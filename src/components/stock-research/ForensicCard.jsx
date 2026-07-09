@@ -20,6 +20,23 @@ const theme = {
   radius: "16px",
 };
 
+function getNum(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(String(value).replace(/,/g, "").replace("%", "").trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+function fmt(value, digits = 2, suffix = "") {
+  const n = getNum(value);
+  return n !== null ? `${n.toFixed(digits)}${suffix}` : "-";
+}
+
+function normalizeDebtToEquity(value) {
+  const n = getNum(value);
+  if (n === null) return null;
+  return n > 10 ? n / 100 : n;
+}
+
 function gradeMeaning(grade) {
   const g = String(grade || "").toUpperCase();
   if (g === "A") return "Excellent";
@@ -28,6 +45,65 @@ function gradeMeaning(grade) {
   if (g === "D") return "Weak / caution";
   if (g === "E") return "Poor";
   return "-";
+}
+
+function scoreColor(score) {
+  const n = Number(score);
+  if (Number.isNaN(n)) return theme.muted;
+  if (n >= 70) return theme.green;
+  if (n >= 40) return theme.amber;
+  return theme.red;
+}
+
+function calculateForensicScore(forensic) {
+  if (!forensic) return null;
+
+  let score = 0;
+
+  const cfoPat = getNum(forensic.cfoPat);
+  const debtEquity = normalizeDebtToEquity(forensic.debtEquity);
+  const opmCurrent = getNum(forensic.opmCurrent);
+  const recvDaysCurrent = getNum(forensic.recvDaysCurrent);
+  const invDaysCurrent = getNum(forensic.invDaysCurrent);
+  const pledgePct = getNum(forensic.pledgePct);
+
+  if (cfoPat !== null) {
+    if (cfoPat >= 1) score += 25;
+    else if (cfoPat >= 0.8) score += 15;
+    else score += 5;
+  }
+
+  if (debtEquity !== null) {
+    if (debtEquity <= 0.5) score += 20;
+    else if (debtEquity <= 1) score += 12;
+    else score += 5;
+  }
+
+  if (opmCurrent !== null) {
+    if (opmCurrent >= 15) score += 20;
+    else if (opmCurrent >= 8) score += 12;
+    else score += 5;
+  }
+
+  if (recvDaysCurrent !== null) {
+    if (recvDaysCurrent <= 60) score += 15;
+    else if (recvDaysCurrent <= 90) score += 8;
+    else score += 3;
+  }
+
+  if (invDaysCurrent !== null) {
+    if (invDaysCurrent <= 90) score += 15;
+    else if (invDaysCurrent <= 140) score += 8;
+    else score += 3;
+  }
+
+  if (pledgePct !== null) {
+    if (pledgePct === 0) score += 5;
+    else if (pledgePct <= 10) score += 3;
+    else score += 0;
+  }
+
+  return Math.min(100, score);
 }
 
 function getTileTone(kind) {
@@ -41,8 +117,8 @@ function getTileTone(kind) {
 }
 
 function getCashFlowRemark(cfoPat) {
-  const n = Number(cfoPat);
-  if (Number.isNaN(n)) {
+  const n = getNum(cfoPat);
+  if (n === null) {
     return { tone: "warn", text: "Cash-flow support is not clearly available." };
   }
   if (n >= 1) {
@@ -55,11 +131,10 @@ function getCashFlowRemark(cfoPat) {
 }
 
 function getLeverageRemark(debtEquity) {
-  const n = Number(debtEquity);
-  if (Number.isNaN(n)) {
+  const d = normalizeDebtToEquity(debtEquity);
+  if (d === null) {
     return { tone: "warn", text: "Debt position is not fully available." };
   }
-  const d = n > 10 ? n / 100 : n;
   if (d <= 0.5) {
     return { tone: "good", text: "Debt levels look comfortable." };
   }
@@ -70,8 +145,8 @@ function getLeverageRemark(debtEquity) {
 }
 
 function getMarginRemark(opmCurrent) {
-  const n = Number(opmCurrent);
-  if (Number.isNaN(n)) {
+  const n = getNum(opmCurrent);
+  if (n === null) {
     return { tone: "warn", text: "Margin trend is not clearly available." };
   }
   if (n >= 15) {
@@ -84,32 +159,51 @@ function getMarginRemark(opmCurrent) {
 }
 
 function getWorkingCapitalRemark(recvDaysCurrent, invDaysCurrent) {
-  const recv = Number(recvDaysCurrent);
-  const inv = Number(invDaysCurrent);
+  const recv = getNum(recvDaysCurrent);
+  const inv = getNum(invDaysCurrent);
 
-  if (Number.isNaN(recv) && Number.isNaN(inv)) {
+  if (recv === null && inv === null) {
     return { tone: "warn", text: "Working-capital cycle is not fully available." };
   }
 
-  if ((!Number.isNaN(recv) && recv <= 60) && (!Number.isNaN(inv) && inv <= 90)) {
+  if ((recv === null || recv <= 60) && (inv === null || inv <= 90)) {
     return { tone: "good", text: "Collections look healthy and inventory is manageable." };
   }
 
-  if ((!Number.isNaN(recv) && recv <= 90) && (!Number.isNaN(inv) && inv <= 140)) {
+  if ((recv === null || recv <= 90) && (inv === null || inv <= 140)) {
     return { tone: "warn", text: "Working-capital cycle is acceptable but needs watching." };
   }
 
   return { tone: "bad", text: "Collections or inventory cycle may be stretched." };
 }
 
+function getPledgeRemark(pledgePct) {
+  const n = getNum(pledgePct);
+  if (n === null) {
+    return { tone: "warn", text: "Promoter pledge data is not available." };
+  }
+  if (n === 0) {
+    return { tone: "good", text: "No promoter pledge is visible." };
+  }
+  if (n <= 10) {
+    return { tone: "warn", text: "Promoter pledge is present but not very high." };
+  }
+  return { tone: "bad", text: "Promoter pledge looks elevated and needs caution." };
+}
+
 function buildOverallSentence(forensic) {
   const cash = getCashFlowRemark(forensic?.cfoPat);
   const lev = getLeverageRemark(forensic?.debtEquity);
   const mar = getMarginRemark(forensic?.opmCurrent);
-  const wc = getWorkingCapitalRemark(forensic?.recvDaysCurrent, forensic?.invDaysCurrent);
+  const wc = getWorkingCapitalRemark(
+    forensic?.recvDaysCurrent,
+    forensic?.invDaysCurrent
+  );
+  const pledge = getPledgeRemark(forensic?.pledgePct);
 
-  const badCount = [cash, lev, mar, wc].filter((x) => x.tone === "bad").length;
-  const warnCount = [cash, lev, mar, wc].filter((x) => x.tone === "warn").length;
+  const checks = [cash, lev, mar, wc, pledge];
+  const badCount = checks.filter((x) => x.tone === "bad").length;
+  const warnCount = checks.filter((x) => x.tone === "warn").length;
 
   if (badCount >= 2) {
     return "This stock shows multiple accounting or operating areas that need caution.";
@@ -126,20 +220,21 @@ function infoTile(title, remark) {
   return (
     <div
       style={{
-        padding: "12px",
-        borderRadius: "10px",
-        border: `1px solid ${tone.border}`,
         background: tone.bg,
+        border: `1px solid ${tone.border}`,
+        borderRadius: "14px",
+        padding: "12px 12px",
+        minHeight: "92px",
       }}
     >
       <div
         style={{
           fontSize: "12px",
           fontWeight: 800,
-          color: tone.color,
-          marginBottom: "5px",
+          color: theme.muted,
           textTransform: "uppercase",
-          letterSpacing: "0.05em",
+          letterSpacing: "0.04em",
+          marginBottom: "6px",
         }}
       >
         {title}
@@ -147,9 +242,9 @@ function infoTile(title, remark) {
       <div
         style={{
           fontSize: "13px",
-          lineHeight: "1.6",
-          color: theme.text,
-          fontWeight: 600,
+          lineHeight: "1.5",
+          fontWeight: 700,
+          color: tone.color,
         }}
       >
         {remark.text}
@@ -158,14 +253,47 @@ function infoTile(title, remark) {
   );
 }
 
-export default function ForensicCard({ forensic = {} }) {
-  const score = forensic?.score ?? "-";
-  const grade = forensic?.grade ?? "-";
+function metricRow(label, value, last = false) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "12px",
+        padding: "10px 0",
+        borderBottom: last ? "none" : `1px solid ${theme.cardBorder}`,
+      }}
+    >
+      <span style={{ fontSize: "13px", color: theme.muted, fontWeight: 700 }}>
+        {label}
+      </span>
+      <span style={{ fontSize: "16px", fontWeight: 700, color: theme.title }}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
-  const cash = getCashFlowRemark(forensic?.cfoPat);
-  const lev = getLeverageRemark(forensic?.debtEquity);
-  const mar = getMarginRemark(forensic?.opmCurrent);
-  const wc = getWorkingCapitalRemark(forensic?.recvDaysCurrent, forensic?.invDaysCurrent);
+export default function ForensicCard({ forensic, research }) {
+  const forensicData = forensic || research?.forensic || {};
+
+  const score =
+    forensicData?.score ?? calculateForensicScore(forensicData);
+
+  const grade = forensicData?.grade || "-";
+
+  const cashRemark = getCashFlowRemark(forensicData?.cfoPat);
+  const leverageRemark = getLeverageRemark(forensicData?.debtEquity);
+  const marginRemark = getMarginRemark(forensicData?.opmCurrent);
+  const wcRemark = getWorkingCapitalRemark(
+    forensicData?.recvDaysCurrent,
+    forensicData?.invDaysCurrent
+  );
+  const pledgeRemark = getPledgeRemark(forensicData?.pledgePct);
+  const overallSentence = buildOverallSentence(forensicData);
+
+  const normalizedDE = normalizeDebtToEquity(forensicData?.debtEquity);
 
   return (
     <div
@@ -199,26 +327,19 @@ export default function ForensicCard({ forensic = {} }) {
           >
             Forensic
           </h3>
-          <div
-            style={{
-              fontSize: "12px",
-              color: theme.muted,
-              fontWeight: 600,
-              lineHeight: "1.4",
-            }}
-          >
-            Plain-language quality checks
+          <div style={{ fontSize: "12px", color: theme.muted, fontWeight: 600 }}>
+            Accounting quality and operating discipline
           </div>
         </div>
 
         <div
           style={{
-            padding: "8px 10px",
+            minWidth: "88px",
+            textAlign: "center",
             borderRadius: "12px",
+            padding: "8px 10px",
             background: theme.purpleSoft,
-            border: "1px solid #d8ccff",
-            textAlign: "right",
-            minWidth: "110px",
+            border: "1px solid #ddd6fe",
           }}
         >
           <div style={{ fontSize: "12px", color: theme.muted, fontWeight: 700 }}>
@@ -226,70 +347,84 @@ export default function ForensicCard({ forensic = {} }) {
           </div>
           <div
             style={{
+              marginTop: "4px",
               fontSize: "20px",
               fontWeight: 800,
-              color: theme.title,
-              marginTop: "4px",
+              color: scoreColor(score),
             }}
           >
-            {score}
+            {score ?? "-"}
           </div>
           <div
             style={{
-              marginTop: "4px",
-              fontSize: "12px",
-              color: theme.muted,
-              fontWeight: 600,
-              lineHeight: "1.4",
+              marginTop: "2px",
+              fontSize: "11px",
+              fontWeight: 800,
+              color: theme.purple,
+              letterSpacing: "0.03em",
             }}
           >
-            Grade {grade} | {gradeMeaning(grade)}
+            {grade} · {gradeMeaning(grade)}
           </div>
         </div>
       </div>
 
       <div
         style={{
-          marginBottom: "12px",
-          padding: "12px",
-          borderRadius: "10px",
-          background: "#ffffff",
+          background: "#fafafa",
           border: `1px solid ${theme.cardBorder}`,
-          color: theme.text,
-          fontSize: "13px",
-          lineHeight: "1.65",
-          fontWeight: 600,
+          borderRadius: "14px",
+          padding: "12px 14px",
+          marginBottom: "14px",
         }}
       >
-        {buildOverallSentence(forensic)}
-      </div>
-
-      <div style={{ display: "grid", gap: "9px", marginBottom: "12px" }}>
-        {infoTile("Cash Flow", cash)}
-        {infoTile("Leverage", lev)}
-        {infoTile("Margins", mar)}
-        {infoTile("Working Capital", wc)}
+        <div
+          style={{
+            fontSize: "13px",
+            lineHeight: "1.6",
+            color: theme.text,
+            fontWeight: 600,
+          }}
+        >
+          {overallSentence}
+        </div>
       </div>
 
       <div
         style={{
-          padding: "12px",
-          borderRadius: "10px",
-          background: "#ffffff",
-          border: `1px dashed ${theme.cardBorder}`,
-          fontSize: "12px",
-          lineHeight: "1.7",
-          color: theme.muted,
-          fontWeight: 600,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: "10px",
+          marginBottom: "14px",
         }}
       >
-        <div style={{ color: theme.title, fontWeight: 800, marginBottom: "6px" }}>
-          Verify on Yahoo Finance
-        </div>
-        <div>Cash Flow: open the Cash Flow tab and compare operating cash flow with net income.</div>
-        <div>Leverage: open Balance Sheet and check total debt against shareholders’ equity.</div>
-        <div>Margins: open Financials and compare operating income with revenue.</div>
-        <div>Working Capital: open Balance Sheet and review receivables and inventory trends.</div>
+        {infoTile("Cash Flow", cashRemark)}
+        {infoTile("Leverage", leverageRemark)}
+        {infoTile("Margins", marginRemark)}
+        {infoTile("Working Capital", wcRemark)}
+      </div>
+
+      <div
+        style={{
+          background: "#ffffff",
+          border: `1px solid ${theme.cardBorder}`,
+          borderRadius: "14px",
+          padding: "0 12px",
+        }}
+      >
+        {metricRow("CFO / PAT", fmt(forensicData?.cfoPat))}
+        {metricRow(
+          "Debt / Equity",
+          normalizedDE !== null ? normalizedDE.toFixed(2) : "-"
+        )}
+        {metricRow("Operating Margin", fmt(forensicData?.opmCurrent, 2, "%"))}
+        {metricRow("Receivable Days", fmt(forensicData?.recvDaysCurrent))}
+        {metricRow("Inventory Days", fmt(forensicData?.invDaysCurrent))}
+        {metricRow("Pledge %", fmt(forensicData?.pledgePct, 2, "%"), true)}
+      </div>
+
+      <div style={{ marginTop: "12px" }}>
+        {infoTile("Promoter Pledge", pledgeRemark)}
       </div>
     </div>
   );

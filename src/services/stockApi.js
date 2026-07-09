@@ -28,5 +28,7 @@ export async function fetchStockResearch(symbol) {
     throw new Error(`Research failed: ${res.status}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  console.log("Research JSON:", JSON.stringify(data, null, 2));
+  return data;
 }

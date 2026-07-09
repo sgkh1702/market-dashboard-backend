@@ -48,7 +48,6 @@ function calculateFinancialScore(financial) {
   if (!financial) return null;
 
   let score = 0;
-
   const pe = getNum(financial.pe);
   const roe = getNum(financial.roe);
   const roce = getNum(financial.roce);
@@ -208,23 +207,27 @@ function metricRow(label, value, valueStyle = {}, last = false) {
   );
 }
 
-export default function FinancialCard({ financial, forensic }) {
-  const financialScore = calculateFinancialScore(financial);
+export default function FinancialCard({ financial, forensic, research }) {
+  const financialData = financial || research?.financial || {};
+  const forensicData = forensic || research?.forensic || {};
 
-  const peTone = tone("pe", financial?.pe);
-  const pbTone = tone("pb", financial?.pb);
-  const roeTone = tone("roeRoce", financial?.roe);
-  const roceTone = tone("roeRoce", financial?.roce);
-  const deTone = tone("de", financial?.debtToEquity);
-  const salesTone = tone("growth", financial?.salesGrowthYoY);
-  const crTone = tone("currentRatio", financial?.currentRatio);
-  const netMarginTone = tone("margin", financial?.netMargin);
-  const opmTone = tone("margin", financial?.operatingMargin);
-  const cfoPatTone = tone("cfoPat", forensic?.cfoPat);
-  const recvTone = tone("lowerBetter", forensic?.recvDaysCurrent);
-  const invTone = tone("lowerBetter", forensic?.invDaysCurrent);
+  const financialScore =
+    financialData?.score ?? calculateFinancialScore(financialData);
 
-  const normalizedDE = normalizeDebtToEquity(financial?.debtToEquity);
+  const peTone = tone("pe", financialData?.pe);
+  const pbTone = tone("pb", financialData?.pb);
+  const roeTone = tone("roeRoce", financialData?.roe);
+  const roceTone = tone("roeRoce", financialData?.roce);
+  const deTone = tone("de", financialData?.debtToEquity);
+  const salesTone = tone("growth", financialData?.salesGrowthYoY);
+  const crTone = tone("currentRatio", financialData?.currentRatio);
+  const netMarginTone = tone("margin", financialData?.netMargin);
+  const opmTone = tone("margin", financialData?.operatingMargin);
+  const cfoPatTone = tone("cfoPat", forensicData?.cfoPat);
+  const recvTone = tone("lowerBetter", forensicData?.recvDaysCurrent);
+  const invTone = tone("lowerBetter", forensicData?.invDaysCurrent);
+
+  const normalizedDE = normalizeDebtToEquity(financialData?.debtToEquity);
 
   return (
     <div
@@ -289,41 +292,39 @@ export default function FinancialCard({ financial, forensic }) {
         </div>
       </div>
 
-      <div>
-        {metricRow("P/E", fmt(financial?.pe), { color: peTone.color })}
-        {metricRow("P/B", fmt(financial?.pb), { color: pbTone.color })}
-        {metricRow("ROE", fmt(financial?.roe, 2, "%"), { color: roeTone.color })}
-        {metricRow("ROCE", fmt(financial?.roce, 2, "%"), { color: roceTone.color })}
-        {metricRow(
-          "Debt / Equity",
-          normalizedDE !== null ? normalizedDE.toFixed(2) : "-",
-          { color: deTone.color }
-        )}
-        {metricRow("Sales Growth YoY", fmt(financial?.salesGrowthYoY, 2, "%"), {
-          color: salesTone.color,
-        })}
-        {metricRow("Current Ratio", fmt(financial?.currentRatio), {
-          color: crTone.color,
-        })}
-        {metricRow("Net Margin", fmt(financial?.netMargin, 2, "%"), {
-          color: netMarginTone.color,
-        })}
-        {metricRow("Operating Margin", fmt(financial?.operatingMargin, 2, "%"), {
-          color: opmTone.color,
-        })}
-        {metricRow("CFO / PAT", fmt(forensic?.cfoPat), {
-          color: cfoPatTone.color,
-        })}
-        {metricRow("Receivable Days", fmt(forensic?.recvDaysCurrent), {
-          color: recvTone.color,
-        })}
-        {metricRow(
-          "Inventory Days",
-          fmt(forensic?.invDaysCurrent),
-          { color: invTone.color },
-          true
-        )}
-      </div>
+      {metricRow("P/E", fmt(financialData?.pe), { color: peTone.color })}
+      {metricRow("P/B", fmt(financialData?.pb), { color: pbTone.color })}
+      {metricRow("ROE", fmt(financialData?.roe, 2, "%"), { color: roeTone.color })}
+      {metricRow("ROCE", fmt(financialData?.roce, 2, "%"), { color: roceTone.color })}
+      {metricRow(
+        "Debt / Equity",
+        normalizedDE !== null ? normalizedDE.toFixed(2) : "-",
+        { color: deTone.color }
+      )}
+      {metricRow("Sales Growth YoY", fmt(financialData?.salesGrowthYoY, 2, "%"), {
+        color: salesTone.color,
+      })}
+      {metricRow("Current Ratio", fmt(financialData?.currentRatio), {
+        color: crTone.color,
+      })}
+      {metricRow("Net Margin", fmt(financialData?.netMargin, 2, "%"), {
+        color: netMarginTone.color,
+      })}
+      {metricRow("Operating Margin", fmt(financialData?.operatingMargin, 2, "%"), {
+        color: opmTone.color,
+      })}
+      {metricRow("CFO / PAT", fmt(forensicData?.cfoPat), {
+        color: cfoPatTone.color,
+      })}
+      {metricRow("Receivable Days", fmt(forensicData?.recvDaysCurrent), {
+        color: recvTone.color,
+      })}
+      {metricRow(
+        "Inventory Days",
+        fmt(forensicData?.invDaysCurrent),
+        { color: invTone.color },
+        true
+      )}
     </div>
   );
 }

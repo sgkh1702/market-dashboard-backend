@@ -116,17 +116,28 @@ const getTagStyle = (tag) => {
 };
 
 const getDmaBadgeStyle = (value) => {
-  const v = String(value || "").toLowerCase();
+  const v = String(value || "").toLowerCase().trim();
   if (v.includes("strong")) {
     return { ...pillStyle, background: theme.greenSoft, color: theme.green };
   }
-  if (v.includes("50-200")) {
+  if (v.includes("20-50")) {
     return { ...pillStyle, background: theme.amberSoft, color: theme.amber };
   }
-  if (v.includes("below 50")) {
+  if (v.includes("below 20")) {
     return { ...pillStyle, background: theme.redSoft, color: theme.red };
   }
   return { ...pillStyle, background: "#e2e8f0", color: theme.textSoft };
+};
+
+const getDmaCrossValue = (cmp, sma20, sma50) => {
+  const c = getNumber(cmp);
+  const s20 = getNumber(sma20);
+  const s50 = getNumber(sma50);
+
+  if (c === null || s20 === null || s50 === null) return "";
+  if (c > s20 && c > s50) return "Strong";
+  if (c > s20) return "20-50";
+  return "Below 20";
 };
 
 const getDecisionColor = (action) => {
@@ -547,31 +558,38 @@ export default function RolloverAnalysisTab() {
   const rows = rawData.length > 1 ? rawData.slice(1).filter((row) => Array.isArray(row)) : [];
   const extractionDate = rawData?.[1]?.[24] || "";
 
+  const norm = (v) => String(v || "").trim().toLowerCase();
+
   const colIndex = {
-    name: headers.findIndex((h) => h?.toLowerCase().includes("name")),
-    cmp: headers.findIndex((h) => h?.toLowerCase().includes("cmp")),
-    roe: headers.findIndex((h) => h?.toLowerCase().includes("roe")),
-    roce: headers.findIndex((h) => h?.toLowerCase().includes("roce")),
+    name: headers.findIndex((h) => norm(h).includes("name")),
+    cmp: headers.findIndex((h) => norm(h).includes("cmp")),
+    roe: headers.findIndex((h) => norm(h).includes("roe")),
+    roce: headers.findIndex((h) => norm(h).includes("roce")),
     salesGrowth: headers.findIndex(
-      (h) => h?.toLowerCase().includes("sales") && h?.toLowerCase().includes("5")
+      (h) => norm(h).includes("sales") && norm(h).includes("5")
     ),
     profitGrowth: headers.findIndex(
-      (h) => h?.toLowerCase().includes("profit") && h?.toLowerCase().includes("5yr")
+      (h) => norm(h).includes("profit") && norm(h).includes("3yr")
     ),
-    peg: headers.findIndex((h) => h?.toLowerCase().includes("peg")),
+    peg: headers.findIndex((h) => norm(h) === "peg"),
     debtEquity: headers.findIndex(
-      (h) => h?.toLowerCase().includes("debt") || h?.toLowerCase().includes("d/e")
+      (h) => norm(h).includes("debt") || norm(h).includes("d/e")
     ),
-    pe: headers.findIndex((h) => h?.toLowerCase().includes("p/e")),
-    symbol: headers.findIndex((h) => h?.toLowerCase() === "symbol"),
-    dmaCross: headers.findIndex((h) => h?.toLowerCase().includes("dma crossover")),
-    dma50: headers.findIndex((h) => h?.toLowerCase().includes("50 dma")),
-    dma200: headers.findIndex((h) => h?.toLowerCase().includes("200 dma")),
+    pe: headers.findIndex((h) => norm(h).includes("p/e")),
+    symbol: headers.findIndex((h) => norm(h) === "symbol"),
+    dmaCross: headers.findIndex((h) => norm(h) === "dma crossover"),
+    dma50: headers.findIndex((h) => norm(h).includes("50 dma")),
+    dma200: headers.findIndex((h) => norm(h).includes("200 dma")),
+    sma20: headers.findIndex((h) => norm(h) === "sma20"),
+    sma50: headers.findIndex((h) => norm(h) === "sma50"),
   };
 
   const calcScore = (row) => {
-    const getNum = (idx) => (idx >= 0 && row[idx] ? parseFloat(row[idx]) || 0 : 0);
-    const getText = (idx) => (idx >= 0 && row[idx] ? String(row[idx]).toLowerCase().trim() : "");
+    const getNum = (idx) => {
+      if (idx < 0) return 0;
+      const n = getNumber(row[idx]);
+      return n === null ? 0 : n;
+    };
 
     const s = {
       cmp: getNum(colIndex.cmp),
@@ -584,8 +602,11 @@ export default function RolloverAnalysisTab() {
       pe: getNum(colIndex.pe),
       dma50: getNum(colIndex.dma50),
       dma200: getNum(colIndex.dma200),
-      dmaCross: getText(colIndex.dmaCross),
+      sma20: getNum(colIndex.sma20),
+      sma50: getNum(colIndex.sma50),
     };
+
+    const dmaCross = getDmaCrossValue(s.cmp, s.sma20, s.sma50).toLowerCase();
 
     let score = 0;
 
@@ -639,9 +660,9 @@ export default function RolloverAnalysisTab() {
       else score -= 3;
     }
 
-    if (s.dmaCross.includes("strong")) score += 6;
-    else if (s.dmaCross.includes("50-200")) score += 3;
-    else if (s.dmaCross.includes("below 50")) score -= 3;
+    if (dmaCross.includes("strong")) score += 6;
+    else if (dmaCross.includes("20-50")) score += 3;
+    else if (dmaCross.includes("below 20")) score -= 3;
 
     return Math.max(0, Math.min(score, 100));
   };
@@ -680,8 +701,10 @@ export default function RolloverAnalysisTab() {
       const nameCell = row[colIndex.name] || "";
       const symbolCell = colIndex.symbol >= 0 ? row[colIndex.symbol] || "" : row[0] || "";
       const cmpCell = colIndex.cmp >= 0 ? row[colIndex.cmp] || "" : "";
-      const cmpUnavailable = isBlank(cmpCell);
-      const dmaCross = colIndex.dmaCross >= 0 ? row[colIndex.dmaCross] || "" : "";
+      const sma20Cell = colIndex.sma20 >= 0 ? row[colIndex.sma20] || "" : "";
+      const sma50Cell = colIndex.sma50 >= 0 ? row[colIndex.sma50] || "" : "";
+      const cmpUnavailable = getNumber(cmpCell) === null;
+      const dmaCross = getDmaCrossValue(cmpCell, sma20Cell, sma50Cell);
 
       const meta = {
         score,
@@ -689,6 +712,8 @@ export default function RolloverAnalysisTab() {
         name: nameCell,
         symbol: symbolCell,
         cmp: cmpCell,
+        sma20: sma20Cell,
+        sma50: sma50Cell,
         roe: row[colIndex.roe] || "",
         roce: row[colIndex.roce] || "",
         salesGrowth: row[colIndex.salesGrowth] || "",

@@ -1,0 +1,9 @@
+symbol,time,reason
+20MICRONS,2026-05-10T16:55:56.418418,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+21STCENMGM,2026-05-10T16:55:58.422668,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+360ONE,2026-05-10T16:56:00.425376,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+3BBLACKBIO,2026-05-10T16:56:02.427345,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+3IINFOLTD,2026-05-10T16:59:46.045268,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+3MINDIA,2026-05-10T16:59:48.048309,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+3PLAND,2026-05-10T16:59:50.051187,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."
+5PAISA,2026-05-10T16:59:52.053482,"Yahoo API requires curl_cffi session not <class 'requests.sessions.Session'>. Solution: stop setting session, let YF handle."

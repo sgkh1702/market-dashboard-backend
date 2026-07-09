@@ -353,7 +353,7 @@ def build_live_research(symbol: str, stock_meta: dict):
 
     financial_score = calc_financial_score(financial_metrics)
     forensic_metrics = calc_forensic_metrics(ticker, info, financial_metrics)
-    forensic_score = derive_forensic_score(financial_metrics)
+    forensic_score = derive_forensic_score(forensic_metrics)
     financial_grade = calc_financial_grade(financial_score)
     forensic_grade = derive_forensic_grade(forensic_score)
 
@@ -476,3 +476,308 @@ def get_stock_research_data(symbol: str, stock_meta: dict, force_refresh: bool =
     live = build_live_research(symbol, stock_meta)
     save_cache(symbol, live)
     return live
+
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+import yfinance as yf
+import pandas as pd
+import json
+from pathlib import Path
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = Path(__file__).resolve().parent
+NIFTY500_FILE = BASE_DIR / "Nifty500List.json"
+
+def load_nifty500_symbols():
+    if not NIFTY500_FILE.exists():
+        return []
+    data = json.loads(NIFTY500_FILE.read_text(encoding="utf-8"))
+    symbols = []
+    for item in data:
+        sym = item.get("symbol") or item.get("ticker") or item.get("Symbol")
+        if sym:
+            sym = sym.replace(".NS", "").upper()
+            symbols.append(sym)
+    return sorted(list(set(symbols)))
+
+def ema(series, period=20):
+    return series.ewm(span=period, adjust=False).mean()
+
+def rsi_pd(series, period=14):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, pd.NA)
+    return 100 - (100 / (1 + rs))
+
+def fetch_close_df(symbol, interval, period):
+    df = yf.download(
+        f"{symbol}.NS",
+        period=period,
+        interval=interval,
+        auto_adjust=True,
+        progress=False,
+        threads=False
+    )
+    if df is None or df.empty or "Close" not in df.columns:
+        return None
+    df = df.dropna().copy()
+    return df
+
+def compute_timeframe_metrics(symbol):
+    monthly = fetch_close_df(symbol, "1mo", "5y")
+    weekly = fetch_close_df(symbol, "1wk", "5y")
+    daily = fetch_close_df(symbol, "1d", "2y")
+    intraday = fetch_close_df(symbol, "60m", "60d")
+
+    if monthly is None or weekly is None or daily is None:
+        return None
+
+    monthly["RSI"] = rsi_pd(monthly["Close"])
+    weekly["RSI"] = rsi_pd(weekly["Close"])
+    daily["RSI"] = rsi_pd(daily["Close"])
+    daily["EMA20"] = ema(daily["Close"], 20)
+
+    result = {
+        "monthly_close": float(monthly["Close"].iloc[-1]),
+        "weekly_close": float(weekly["Close"].iloc[-1]),
+        "daily_close": float(daily["Close"].iloc[-1]),
+        "monthly_rsi": float(monthly["RSI"].iloc[-1]),
+        "weekly_rsi": float(weekly["RSI"].iloc[-1]),
+        "daily_rsi": float(daily["RSI"].iloc[-1]),
+        "daily_ema20": float(daily["EMA20"].iloc[-1]),
+    }
+
+    if intraday is not None and not intraday.empty:
+        intraday["RSI"] = rsi_pd(intraday["Close"])
+        intraday["EMA20"] = ema(intraday["Close"], 20)
+        result["intraday_close"] = float(intraday["Close"].iloc[-1])
+        result["intraday_rsi"] = float(intraday["RSI"].iloc[-1])
+        result["intraday_ema20"] = float(intraday["EMA20"].iloc[-1])
+
+    return result
+
+def matches_gfs(m):
+    return (
+        m["monthly_rsi"] > 60 and
+        m["weekly_rsi"] > 60 and
+        58 <= m["daily_rsi"] <= 62
+    )
+
+def matches_agfs(m):
+    return (
+        m["monthly_rsi"] > 60 and
+        m["weekly_rsi"] > 60 and
+        38 <= m["daily_rsi"] <= 45
+    )
+
+def matches_bullish_weekly(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m["weekly_rsi"] < 65 and
+        m["daily_close"] > m["daily_ema20"] and
+        lower_rsi_min <= m["daily_rsi"] <= lower_rsi_max
+    )
+
+@app.get("/api/scanners/run")
+def run_scanner(
+    family: str = Query(..., pattern="^(gfs|agfs|bullish)$"),
+    setup: str | None = Query(None),
+    universe: str = Query("nifty500"),
+    lower_rsi_min: float = Query(65),
+    lower_rsi_max: float = Query(67),
+    limit: int = Query(100)
+):
+    if universe != "nifty500":
+        return {"error": "Start with nifty500 first. cash/futures can be added after testing."}
+
+    symbols = load_nifty500_symbols()[:500]
+    results = []
+
+    for symbol in symbols:
+        try:
+            m = compute_timeframe_metrics(symbol)
+            if not m:
+                continue
+
+            ok = False
+            reason = ""
+
+            if family == "gfs":
+                ok = matches_gfs(m)
+                reason = "Monthly RSI > 60, Weekly RSI > 60, Daily RSI 58-62"
+            elif family == "agfs":
+                ok = matches_agfs(m)
+                reason = "Monthly RSI > 60, Weekly RSI > 60, Daily RSI 38-45"
+            elif family == "bullish" and setup == "weekly":
+                ok = matches_bullish_weekly(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Weekly RSI < 65, Daily Close > Daily EMA20, Daily RSI {lower_rsi_min}-{lower_rsi_max}"
+
+            if ok:
+                results.append({
+                    "symbol": symbol,
+                    "family": family,
+                    "setup": setup,
+                    "universe": universe,
+                    "price": round(m["daily_close"], 2),
+                    "monthly_rsi": round(m["monthly_rsi"], 2),
+                    "weekly_rsi": round(m["weekly_rsi"], 2),
+                    "daily_rsi": round(m["daily_rsi"], 2),
+                    "daily_ema20": round(m["daily_ema20"], 2),
+                    "match_reason": reason
+                })
+
+            if len(results) >= limit:
+                break
+
+        except Exception:
+            continue
+
+    return {
+        "count": len(results),
+        "family": family,
+        "setup": setup,
+        "universe": universe,
+        "results": results
+    }
+
+def match_gfs(m):
+    return (
+        m
+        and m["monthly_rsi"] is not None and m["monthly_rsi"] > 60
+        and m["weekly_rsi"] is not None and m["weekly_rsi"] > 60
+        and m["daily_rsi"] is not None and 58 <= m["daily_rsi"] <= 62
+    )
+
+def match_agfs(m):
+    return (
+        m
+        and m["monthly_rsi"] is not None and m["monthly_rsi"] > 60
+        and m["weekly_rsi"] is not None and m["weekly_rsi"] > 60
+        and m["daily_rsi"] is not None and 38 <= m["daily_rsi"] <= 45
+    )
+
+def match_bullish_monthly(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m
+        and m["monthly_rsi"] is not None and m["monthly_rsi"] < 65
+        and m["weekly_close"] is not None and m["weekly_ema20"] is not None and m["weekly_close"] > m["weekly_ema20"]
+        and m["weekly_rsi"] is not None and lower_rsi_min <= m["weekly_rsi"] <= lower_rsi_max
+    )
+
+def match_bullish_weekly(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m
+        and m["weekly_rsi"] is not None and m["weekly_rsi"] < 65
+        and m["daily_close"] is not None and m["daily_ema20"] is not None and m["daily_close"] > m["daily_ema20"]
+        and m["daily_rsi"] is not None and lower_rsi_min <= m["daily_rsi"] <= lower_rsi_max
+    )
+
+def match_bullish_daily(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m
+        and m["daily_rsi"] is not None and m["daily_rsi"] < 65
+        and m["intraday_close"] is not None and m["intraday_ema20"] is not None and m["intraday_close"] > m["intraday_ema20"]
+        and m["intraday_rsi"] is not None and lower_rsi_min <= m["intraday_rsi"] <= lower_rsi_max
+    )
+
+def match_bearish_monthly(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m
+        and m["monthly_rsi"] is not None and m["monthly_rsi"] > 35
+        and m["weekly_close"] is not None and m["weekly_ema20"] is not None and m["weekly_close"] < m["weekly_ema20"]
+        and m["weekly_rsi"] is not None and lower_rsi_min <= m["weekly_rsi"] <= lower_rsi_max
+    )
+
+def match_bearish_weekly(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m
+        and m["weekly_rsi"] is not None and m["weekly_rsi"] > 35
+        and m["daily_close"] is not None and m["daily_ema20"] is not None and m["daily_close"] < m["daily_ema20"]
+        and m["daily_rsi"] is not None and lower_rsi_min <= m["daily_rsi"] <= lower_rsi_max
+    )
+
+def match_bearish_daily(m, lower_rsi_min, lower_rsi_max):
+    return (
+        m
+        and m["daily_rsi"] is not None and m["daily_rsi"] > 35
+        and m["intraday_close"] is not None and m["intraday_ema20"] is not None and m["intraday_close"] < m["intraday_ema20"]
+        and m["intraday_rsi"] is not None and lower_rsi_min <= m["intraday_rsi"] <= lower_rsi_max
+    )
+
+def run_scanner_for_symbols(
+    symbols: list[str],
+    family: str,
+    setup: str | None = None,
+    lower_rsi_min: float = 65,
+    lower_rsi_max: float = 67,
+    limit: int = 100,
+):
+    results = []
+
+    for symbol in symbols:
+        try:
+            m = build_scanner_metrics(symbol)
+            if not m:
+                continue
+
+            matched = False
+            reason = ""
+
+            if family == "gfs":
+                matched = match_gfs(m)
+                reason = "Monthly RSI > 60, Weekly RSI > 60, Daily RSI 58-62"
+            elif family == "agfs":
+                matched = match_agfs(m)
+                reason = "Monthly RSI > 60, Weekly RSI > 60, Daily RSI 38-45"
+            elif family == "bullish" and setup == "monthly":
+                matched = match_bullish_monthly(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Monthly RSI < 65, Weekly Close > Weekly EMA20, Weekly RSI {lower_rsi_min}-{lower_rsi_max}"
+            elif family == "bullish" and setup == "weekly":
+                matched = match_bullish_weekly(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Weekly RSI < 65, Daily Close > Daily EMA20, Daily RSI {lower_rsi_min}-{lower_rsi_max}"
+            elif family == "bullish" and setup == "daily":
+                matched = match_bullish_daily(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Daily RSI < 65, 60m Close > 60m EMA20, 60m RSI {lower_rsi_min}-{lower_rsi_max}"
+            elif family == "bearish" and setup == "monthly":
+                matched = match_bearish_monthly(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Monthly RSI > 35, Weekly Close < Weekly EMA20, Weekly RSI {lower_rsi_min}-{lower_rsi_max}"
+            elif family == "bearish" and setup == "weekly":
+                matched = match_bearish_weekly(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Weekly RSI > 35, Daily Close < Daily EMA20, Daily RSI {lower_rsi_min}-{lower_rsi_max}"
+            elif family == "bearish" and setup == "daily":
+                matched = match_bearish_daily(m, lower_rsi_min, lower_rsi_max)
+                reason = f"Daily RSI > 35, 60m Close < 60m EMA20, 60m RSI {lower_rsi_min}-{lower_rsi_max}"
+
+            if matched:
+                results.append({
+                    "symbol": m["symbol"],
+                    "monthly_rsi": m["monthly_rsi"],
+                    "weekly_rsi": m["weekly_rsi"],
+                    "daily_rsi": m["daily_rsi"],
+                    "daily_close": m["daily_close"],
+                    "daily_ema20": m["daily_ema20"],
+                    "intraday_rsi": m["intraday_rsi"],
+                    "intraday_close": m["intraday_close"],
+                    "intraday_ema20": m["intraday_ema20"],
+                    "match_reason": reason,
+                })
+
+            if len(results) >= limit:
+                break
+
+        except Exception:
+            continue
+
+    return results
+

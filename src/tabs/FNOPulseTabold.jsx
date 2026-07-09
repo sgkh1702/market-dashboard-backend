@@ -45,11 +45,16 @@ function FNOPulseTab() {
   const maxOIChange = useSheetRange("Buildup", "I3:L13");
 
   const futuresLoading =
-    !longBuildup || !shortCovering || !longUnwinding || !shortBuildup || !maxOIChange;
+    !longBuildup ||
+    !shortCovering ||
+    !longUnwinding ||
+    !shortBuildup ||
+    !maxOIChange;
 
   // ---------- Calls ----------
   const callsTimestampData = useSheetRange("Options", "A2");
-  const callsTimestamp = (callsTimestampData && callsTimestampData[0]?.[0]) || "-";
+  const callsTimestamp =
+    (callsTimestampData && callsTimestampData[0]?.[0]) || "-";
   const callsRaw = useSheetRange("Options", "B1:L21");
   const callsExpiry =
     callsRaw && callsRaw.length > 1 ? callsRaw[1][1] || "-" : "-";
@@ -81,7 +86,8 @@ function FNOPulseTab() {
 
   // ---------- Puts ----------
   const putsTimestampData = useSheetRange("Options", "A52");
-  const putsTimestamp = (putsTimestampData && putsTimestampData[0]?.[0]) || "-";
+  const putsTimestamp =
+    (putsTimestampData && putsTimestampData[0]?.[0]) || "-";
   const putsRaw = useSheetRange("Options", "B50:L70");
   const putsExpiry =
     putsRaw && putsRaw.length > 1 ? putsRaw[1][1] || "-" : "-";
@@ -150,7 +156,7 @@ function FNOPulseTab() {
 
   const tb = (data, title) =>
     data && data.length > 1 ? (
-      <ProfessionalTable title={title} headers={data[0] || []} rows={data.slice(1) || []} />
+      <ProfessionalTable title={title} headers={data[0]} rows={data.slice(1)} />
     ) : null;
 
   // ---------- Momentum symbols ----------
@@ -183,6 +189,10 @@ function FNOPulseTab() {
     buildup: stockHeaders.indexOf("Buildup"),
     maxCeStrike: stockHeaders.indexOf("Max CE Strike"),
     maxPeStrike: stockHeaders.indexOf("Max PE Strike"),
+    ltp:
+      stockHeaders.indexOf("LTP") >= 0
+        ? stockHeaders.indexOf("LTP")
+        : stockHeaders.indexOf("Ltp"),
   };
 
   const mapChartRowsForSymbol = (symbol) => {
@@ -212,6 +222,10 @@ function FNOPulseTab() {
           Number(String(r[stockIdx.maxCeStrike] || "").replace(/,/g, "")) || 0,
         max_pe_strike:
           Number(String(r[stockIdx.maxPeStrike] || "").replace(/,/g, "")) || 0,
+        ltp:
+          stockIdx.ltp >= 0
+            ? Number(String(r[stockIdx.ltp] || "").replace(/,/g, "")) || 0
+            : 0,
       }));
 
     return rows.slice(-10);
@@ -219,11 +233,13 @@ function FNOPulseTab() {
 
   const allSymbols = useMemo(() => {
     if (!stockRows.length || stockIdx.symbol < 0) return [];
-    return [...new Set(
-      stockRows
-        .map((r) => String(r[stockIdx.symbol] || "").trim().toUpperCase())
-        .filter(Boolean)
-    )].sort((a, b) => a.localeCompare(b));
+    return [
+      ...new Set(
+        stockRows
+          .map((r) => String(r[stockIdx.symbol] || "").trim().toUpperCase())
+          .filter(Boolean)
+      ),
+    ].sort((a, b) => a.localeCompare(b));
   }, [stockRows, stockIdx.symbol]);
 
   const bullishSymbol = selectedBullish || bullishSymbols[0] || "";
@@ -313,13 +329,13 @@ function FNOPulseTab() {
       <>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Timestamp:{" "}
+            Timestamp{" "}
             <Typography component="span" variant="subtitle1">
               {callsTimestamp}
             </Typography>
           </Typography>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Expiry:{" "}
+            Expiry{" "}
             <Typography component="span" variant="subtitle1">
               {callsExpiry}
             </Typography>
@@ -328,12 +344,12 @@ function FNOPulseTab() {
 
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
           <ProfessionalTable
-            title="Top CE (Calls) – +ve % Chg"
+            title="Top CE Calls +ve Chg"
             headers={callsHeaders}
             rows={callsRowsPos}
           />
           <ProfessionalTable
-            title="Top CE (Calls) – -ve % Chg"
+            title="Top CE Calls -ve Chg"
             headers={callsHeaders}
             rows={callsRowsNeg}
           />
@@ -348,13 +364,13 @@ function FNOPulseTab() {
       <>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Timestamp:{" "}
+            Timestamp{" "}
             <Typography component="span" variant="subtitle1">
               {putsTimestamp}
             </Typography>
           </Typography>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Expiry:{" "}
+            Expiry{" "}
             <Typography component="span" variant="subtitle1">
               {putsExpiry}
             </Typography>
@@ -363,12 +379,12 @@ function FNOPulseTab() {
 
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
           <ProfessionalTable
-            title="Top PE (Puts) – +ve % Chg"
+            title="Top PE Puts +ve Chg"
             headers={putsHeaders}
             rows={putsRowsPos}
           />
           <ProfessionalTable
-            title="Top PE (Puts) – -ve % Chg"
+            title="Top PE Puts -ve Chg"
             headers={putsHeaders}
             rows={putsRowsNeg}
           />
@@ -427,10 +443,7 @@ function FNOPulseTab() {
         )}
 
         <Paper sx={{ p: 2 }}>
-          <FnoPulseBarChart
-            rows={bullishChartRows}
-            symbol={bullishSymbol}
-          />
+          <FnoPulseBarChart rows={bullishChartRows} symbol={bullishSymbol} />
         </Paper>
       </Box>
     );
@@ -449,10 +462,7 @@ function FNOPulseTab() {
         )}
 
         <Paper sx={{ p: 2 }}>
-          <FnoPulseBarChart
-            rows={bearishChartRows}
-            symbol={bearishSymbol}
-          />
+          <FnoPulseBarChart rows={bearishChartRows} symbol={bearishSymbol} />
         </Paper>
       </Box>
     );
@@ -502,17 +512,14 @@ function FNOPulseTab() {
         </Paper>
 
         <Paper sx={{ p: 2 }}>
-          <FnoPulseBarChart
-            rows={futureChartRows}
-            symbol={futureSymbol}
-          />
+          <FnoPulseBarChart rows={futureChartRows} symbol={futureSymbol} />
         </Paper>
       </Box>
     );
   };
 
   return (
-    <Box sx={{ minWidth: "1000px" }}>
+    <Box sx={{ minWidth: 1000 }}>
       <Tabs
         value={subTab}
         onChange={(_, v) => setSubTab(v)}

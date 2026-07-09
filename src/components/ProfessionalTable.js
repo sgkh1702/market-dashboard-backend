@@ -68,14 +68,16 @@ function getSimple5DDataFromRow(headersLower, safeRow) {
 }
 
 function isTickerLikeHeader(headerText) {
+  const h = String(headerText || "").toLowerCase().trim();
+
   return (
-    headerText.includes("symbol") ||
-    headerText.includes("ticker") ||
-    headerText.includes("tckr") ||
-    headerText === "stock" ||
-    headerText.includes("underlying") ||
-    headerText.includes("index") ||
-    headerText.includes("indices")
+    h.includes("symbol") ||
+    h.includes("ticker") ||
+    h.includes("tckr") ||
+    h === "stock" ||
+    h === "underlying" ||
+    h === "index" ||
+    h === "indices"
   );
 }
 
@@ -196,10 +198,11 @@ export default function ProfessionalTable({
   };
 
   const tableStyle = {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: 14,
-  };
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: 14,
+  overflow: "visible",
+};
 
   const thStyle = {
     background: "#2376c5",
@@ -379,6 +382,7 @@ export default function ProfessionalTable({
                             style={{
                               ...tdLeftStyle,
                               position: "relative",
+			      overflow: "visible",
                               color: link ? "#2376c5" : "#333",
                             }}
                             onMouseEnter={() => setHoverSymbol(`${symbolText}-${i}-${origJ}`)}
