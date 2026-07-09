@@ -386,13 +386,8 @@ const handlePrint = () => {
   const symbol = research?.symbol || selectedStock?.symbol || "-";
   const sector = research?.company?.sector || "-";
   const industry = research?.company?.industry || "-";
-
-  const rawDescription =
+  const fullDescription =
     research?.company?.description || "No business description available.";
-  const shortDescription =
-    rawDescription.length > 420
-      ? `${rawDescription.slice(0, 420)}...`
-      : rawDescription;
 
   const technicalScore = research?.technical?.trendScore ?? null;
   const financialScore = calculateFinancialScore(research?.financial);
@@ -428,6 +423,50 @@ const handlePrint = () => {
       : forensicGrade === "C"
       ? "Average"
       : "Weak";
+
+  const cashFlowComment =
+    Number(research?.forensic?.cfoPat) >= 1
+      ? "Profit is well supported by operating cash flow."
+      : Number(research?.forensic?.cfoPat) >= 0.8
+      ? "Cash flow broadly supports profit, but should be monitored."
+      : "Cash flow support for profit is not strong enough.";
+
+  const leverageComment = (() => {
+    const d = getNum(research?.forensic?.debtEquity);
+    if (d === null) return "Debt position data is not available.";
+    const normalized = d > 10 ? d / 100 : d;
+    if (normalized <= 0.5) return "Debt levels look comfortable.";
+    if (normalized <= 1) return "Debt levels are manageable, but should be monitored.";
+    return "Leverage looks elevated and needs caution.";
+  })();
+
+  const marginsComment =
+    Number(research?.forensic?.opmCurrent) >= 15
+      ? "Margins are healthy and supportive."
+      : Number(research?.forensic?.opmCurrent) >= 8
+      ? "Margins are moderate and need tracking."
+      : "Margins are weak and need close monitoring.";
+
+  const workingCapitalComment = (() => {
+    const recv = getNum(research?.forensic?.recvDaysCurrent);
+    const inv = getNum(research?.forensic?.invDaysCurrent);
+
+    if (recv !== null && inv !== null) {
+      if (recv <= 45 && inv <= 90) {
+        return "Collections look healthy and inventory is manageable.";
+      }
+      if (recv <= 75 && inv <= 140) {
+        return "Working capital is acceptable, but should be watched.";
+      }
+      return "Working capital looks stretched and needs monitoring.";
+    }
+
+    if (recv !== null && recv <= 45) {
+      return "Collections look healthy; inventory data is limited.";
+    }
+
+    return "Working-capital data is mixed or incomplete.";
+  })();
 
   const compactRows = [
     ["Technical Score", technicalScore ?? "-"],
@@ -468,6 +507,7 @@ const handlePrint = () => {
         return d > 10 ? formatNumber(d / 100) : formatNumber(d);
       })(),
     ],
+    ["Operating Margin", formatPercent(research?.forensic?.opmCurrent)],
     ["Receivable Days", formatNumber(research?.forensic?.recvDaysCurrent)],
     ["Inventory Days", formatNumber(research?.forensic?.invDaysCurrent)],
     ["Pledge %", formatPercent(research?.forensic?.pledgePct)],
@@ -525,21 +565,20 @@ const handlePrint = () => {
           }
 
           body {
-            font-size: 10.5px;
-            line-height: 1.3;
+            font-size: 10px;
+            line-height: 1.28;
           }
 
           .report {
             width: 100%;
             max-width: 190mm;
             margin: 0 auto;
-            page-break-inside: avoid;
           }
 
           .header {
             border-bottom: 2px solid #cbd5e1;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
+            padding-bottom: 5px;
+            margin-bottom: 7px;
           }
 
           .title {
@@ -557,27 +596,29 @@ const handlePrint = () => {
           }
 
           .smallMuted {
-            font-size: 9.5px;
+            font-size: 9px;
             color: #64748b;
           }
 
           .metaGrid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
           }
 
           .metaBox {
             border: 1px solid #dbe4f0;
             border-radius: 6px;
-            padding: 6px 8px;
+            padding: 5px 7px;
             background: #f8fbff;
-            min-height: 44px;
+            min-height: 40px;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
 
           .metaLabel {
-            font-size: 9px;
+            font-size: 8.5px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: #64748b;
@@ -586,19 +627,19 @@ const handlePrint = () => {
           }
 
           .metaValue {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 700;
             color: #0f172a;
           }
 
           .section {
-            margin-bottom: 8px;
+            margin-bottom: 7px;
             break-inside: avoid;
             page-break-inside: avoid;
           }
 
           .sectionTitle {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             color: #0f172a;
             text-transform: uppercase;
@@ -611,16 +652,17 @@ const handlePrint = () => {
           .description {
             border: 1px solid #dbe4f0;
             border-radius: 6px;
-            padding: 7px 8px;
+            padding: 6px 7px;
             background: #fcfdff;
-            font-size: 10px;
-            line-height: 1.35;
+            font-size: 9.3px;
+            line-height: 1.28;
+            text-align: justify;
           }
 
           .contentGrid {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 8px;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 7px;
             align-items: start;
           }
 
@@ -632,7 +674,7 @@ const handlePrint = () => {
 
           th, td {
             border: 1px solid #dbe4f0;
-            padding: 4px 6px;
+            padding: 3px 5px;
             vertical-align: top;
             word-wrap: break-word;
           }
@@ -640,24 +682,26 @@ const handlePrint = () => {
           th {
             background: #eef4ff;
             color: #0f172a;
-            font-size: 10px;
+            font-size: 9.3px;
             text-align: left;
           }
 
           td {
-            font-size: 9.8px;
+            font-size: 9px;
           }
 
           .scoreBox {
             border: 1px solid #cfe0ff;
             background: #eff6ff;
             border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 8px;
+            padding: 7px;
+            margin-bottom: 7px;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
 
           .scoreLabel {
-            font-size: 9px;
+            font-size: 8.5px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: #64748b;
@@ -665,7 +709,7 @@ const handlePrint = () => {
           }
 
           .scoreValue {
-            font-size: 24px;
+            font-size: 22px;
             line-height: 1;
             font-weight: 800;
             color: #0f172a;
@@ -673,22 +717,63 @@ const handlePrint = () => {
           }
 
           .scoreText {
-            font-size: 10px;
+            font-size: 9px;
             color: #1f2937;
-            line-height: 1.35;
+            line-height: 1.28;
+          }
+
+          .forensicGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 7px;
+          }
+
+          .forensicMiniCard {
+            border: 1px solid #dbe4f0;
+            border-radius: 6px;
+            padding: 6px 7px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          .forensicMiniCard h4 {
+            margin: 0 0 3px;
+            font-size: 8.8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+          }
+
+          .forensicMiniCard p {
+            margin: 0;
+            font-size: 8.9px;
+            line-height: 1.25;
+          }
+
+          .forensicMiniCard.green {
+            background: #ecfdf5;
+            border-color: #bfe8d8;
+          }
+
+          .forensicMiniCard.amber {
+            background: #fffbeb;
+            border-color: #f2dcc5;
           }
 
           .miniGrid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 7px;
           }
 
           .listCard {
             border: 1px solid #dbe4f0;
             border-radius: 6px;
-            padding: 7px 8px;
+            padding: 6px 7px;
             background: #ffffff;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
 
           .listCard.positive {
@@ -702,7 +787,7 @@ const handlePrint = () => {
           }
 
           .listTitle {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             color: #0f172a;
             margin-bottom: 4px;
@@ -712,26 +797,20 @@ const handlePrint = () => {
 
           ul {
             margin: 0;
-            padding-left: 16px;
+            padding-left: 14px;
           }
 
           li {
             margin: 0 0 3px 0;
-            font-size: 9.8px;
-            line-height: 1.3;
+            font-size: 8.8px;
+            line-height: 1.25;
           }
 
           .footerNote {
-            margin-top: 6px;
-            font-size: 8.8px;
+            margin-top: 5px;
+            font-size: 8px;
             color: #64748b;
             text-align: right;
-          }
-
-          @media print {
-            .report {
-              height: auto;
-            }
           }
         </style>
       </head>
@@ -764,7 +843,7 @@ const handlePrint = () => {
 
           <div class="section">
             <div class="sectionTitle">Business Profile</div>
-            <div class="description">${shortDescription}</div>
+            <div class="description">${fullDescription}</div>
           </div>
 
           <div class="contentGrid">
@@ -784,12 +863,32 @@ const handlePrint = () => {
             </div>
 
             <div>
+              <div class="section">
+                <div class="sectionTitle">Forensic Highlights</div>
+                <div class="forensicGrid">
+                  <div class="forensicMiniCard green">
+                    <h4>Cash Flow</h4>
+                    <p>${cashFlowComment}</p>
+                  </div>
+                  <div class="forensicMiniCard green">
+                    <h4>Leverage</h4>
+                    <p>${leverageComment}</p>
+                  </div>
+                  <div class="forensicMiniCard amber">
+                    <h4>Margins</h4>
+                    <p>${marginsComment}</p>
+                  </div>
+                  <div class="forensicMiniCard green">
+                    <h4>Working Capital</h4>
+                    <p>${workingCapitalComment}</p>
+                  </div>
+                </div>
+              </div>
+
               <div class="scoreBox">
                 <div class="scoreLabel">Brokerage View</div>
                 <div class="scoreValue">${overallScore ?? "-"}</div>
-                <div class="scoreText">
-                  ${overallView}
-                </div>
+                <div class="scoreText">${overallView}</div>
               </div>
 
               <div class="miniGrid">
@@ -819,7 +918,7 @@ const handlePrint = () => {
   setTimeout(() => {
     win.focus();
     win.print();
-  }, 400);
+  }, 500);
 };
 
   const change = research?.overview?.change;
