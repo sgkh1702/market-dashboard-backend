@@ -379,95 +379,448 @@ export default function StockResearchTab() {
     }
   };
 
-  const handlePrint = () => {
-    if (!research) return;
+const handlePrint = () => {
+  if (!research) return;
 
-    const companyName = research?.company?.name || selectedStock?.name || "-";
-    const symbol = research?.symbol || selectedStock?.symbol || "-";
-    const sector = research?.company?.sector || "-";
-    const industry = research?.company?.industry || "-";
-    const rawDescription =
-      research?.company?.description || "No business description available.";
-    const shortDescription =
-      rawDescription.length > 420
-        ? `${rawDescription.slice(0, 420)}...`
-        : rawDescription;
+  const companyName = research?.company?.name || selectedStock?.name || "-";
+  const symbol = research?.symbol || selectedStock?.symbol || "-";
+  const sector = research?.company?.sector || "-";
+  const industry = research?.company?.industry || "-";
 
-    const printContents = printRef.current?.innerHTML;
-    if (!printContents) return;
+  const rawDescription =
+    research?.company?.description || "No business description available.";
+  const shortDescription =
+    rawDescription.length > 420
+      ? `${rawDescription.slice(0, 420)}...`
+      : rawDescription;
 
-    const win = window.open("", "_blank", "width=1400,height=900");
-    if (!win) return;
+  const technicalScore = research?.technical?.trendScore ?? null;
+  const financialScore = calculateFinancialScore(research?.financial);
+  const forensicScore = research?.forensic?.score ?? null;
+  const overallScore =
+    research?.overallScore ??
+    calculateOverallScore(technicalScore, financialScore, forensicScore);
 
-    win.document.write(`
-      <html>
-        <head>
-          <title>Stock Research Report - ${symbol}</title>
-          <meta charset="utf-8" />
-          <style>
-            @page { size: A4 landscape; margin: 5mm; }
-            * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            html, body { margin: 0; padding: 0; background: #ffffff; color: #111827; font-family: Arial, Helvetica, sans-serif; }
-            body { overflow: hidden; }
-            .print-scale-wrap { width: 100%; transform: scale(0.74); transform-origin: top left; }
-            .print-page { width: 135%; padding: 0; }
-            .report-title { font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 2px; line-height: 1.1; }
-            .report-subtitle { font-size: 13px; color: #475569; margin-bottom: 4px; line-height: 1.2; }
-            .report-meta { font-size: 10px; color: #64748b; margin-bottom: 6px; }
-            .top-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
-            .info-card, .business-card { border: 1px solid #dbe4f0; border-radius: 10px; background: #ffffff; break-inside: avoid; page-break-inside: avoid; }
-            .info-card { padding: 8px 10px; min-height: 48px; }
-            .label { font-size: 8px; color: #64748b; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 3px; text-transform: uppercase; }
-            .value { font-size: 12px; color: #0f172a; font-weight: 700; line-height: 1.15; }
-            .business-card { padding: 8px 10px; margin-bottom: 6px; }
-            .business-text { font-size: 10px; line-height: 1.25; color: #1f2937; max-height: 38px; overflow: hidden; }
-            .cards-grid, .summary-row, .summary-grid { gap: 6px !important; margin-bottom: 6px !important; }
-            .cards-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
-            .summary-row { display: grid; grid-template-columns: 1fr 220px; }
-            .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
-            .cards-grid > div, .summary-row > div, .summary-grid > div { break-inside: avoid; page-break-inside: avoid; }
-            .print-root * { page-break-inside: avoid; }
-            .print-root .forensic-extra, .print-root .verify-block, .print-root .yahoo-verify { display: none !important; }
-          </style>
-        </head>
-        <body>
-          <div class="print-scale-wrap">
-            <div class="print-page print-root">
-              <div class="report-title">Stock Research Report</div>
-              <div class="report-subtitle">${symbol} - ${companyName}</div>
-              <div class="report-meta">Generated from Market Dashboard</div>
+  const positivePoints = buildPositivePoints(
+    research,
+    technicalScore,
+    financialScore
+  );
+  const negativePoints = buildNegativePoints(
+    research,
+    technicalScore,
+    forensicScore
+  );
 
-              <div class="top-mini-grid">
-                <div class="info-card">
-                  <div class="label">Sector</div>
-                  <div class="value">${sector}</div>
-                </div>
-                <div class="info-card">
-                  <div class="label">Industry</div>
-                  <div class="value">${industry}</div>
-                </div>
-              </div>
+  const overallView =
+    (overallScore ?? 0) >= 70
+      ? "The stock looks fairly strong across key areas and may deserve deeper research or gradual accumulation."
+      : (overallScore ?? 0) >= 40
+      ? "The stock has some strengths, but overall conviction is still moderate. It looks better suited for watchlist tracking or selective holding than a strong buy right now."
+      : "The stock does not look strong enough right now for a high-conviction view. It may be better to wait for improvement in trend or business quality.";
 
-              <div class="business-card">
-                <div class="label">Business Profile</div>
-                <div class="business-text">${shortDescription}</div>
-              </div>
+  const forensicGrade = research?.forensic?.grade || "-";
+  const forensicGradeText =
+    forensicGrade === "A"
+      ? "Strong"
+      : forensicGrade === "B"
+      ? "Above Average"
+      : forensicGrade === "C"
+      ? "Average"
+      : "Weak";
 
-              ${printContents}
+  const compactRows = [
+    ["Technical Score", technicalScore ?? "-"],
+    ["Trend", research?.technical?.trendLabel || "-"],
+    ["RSI 14", formatNumber(research?.technical?.rsi14)],
+    ["SMA 20", formatNumber(research?.technical?.sma20)],
+    ["SMA 50", formatNumber(research?.technical?.sma50)],
+    ["SMA 200", formatNumber(research?.technical?.sma200)],
+    ["52W High", formatNumber(research?.overview?.week52High)],
+    ["52W Low", formatNumber(research?.overview?.week52Low)],
+
+    ["Financial Score", financialScore ?? "-"],
+    ["P/E", formatNumber(research?.financial?.pe)],
+    ["P/B", formatNumber(research?.financial?.pb)],
+    ["ROE", formatPercent(research?.financial?.roe)],
+    ["ROCE", formatPercent(research?.financial?.roce)],
+    [
+      "Debt / Equity",
+      (() => {
+        const d = getNum(research?.financial?.debtToEquity);
+        if (d === null) return "-";
+        return d > 10 ? formatNumber(d / 100) : formatNumber(d);
+      })(),
+    ],
+    ["Sales Growth YoY", formatPercent(research?.financial?.salesGrowthYoY)],
+    ["Current Ratio", formatNumber(research?.financial?.currentRatio)],
+    ["Net Margin", formatPercent(research?.financial?.netMargin)],
+    ["Operating Margin", formatPercent(research?.financial?.operatingMargin)],
+
+    ["Forensic Score", forensicScore ?? "-"],
+    ["Grade", `${forensicGrade} · ${forensicGradeText}`],
+    ["CFO / PAT", formatNumber(research?.forensic?.cfoPat)],
+    [
+      "Debt / Equity",
+      (() => {
+        const d = getNum(research?.forensic?.debtEquity);
+        if (d === null) return "-";
+        return d > 10 ? formatNumber(d / 100) : formatNumber(d);
+      })(),
+    ],
+    ["Receivable Days", formatNumber(research?.forensic?.recvDaysCurrent)],
+    ["Inventory Days", formatNumber(research?.forensic?.invDaysCurrent)],
+    ["Pledge %", formatPercent(research?.forensic?.pledgePct)],
+  ];
+
+  const rowsHtml = compactRows
+    .map(
+      ([label, value]) => `
+        <tr>
+          <td>${label}</td>
+          <td>${value}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const positivesHtml = positivePoints
+    .slice(0, 3)
+    .map((p) => `<li>${p}</li>`)
+    .join("");
+
+  const negativesHtml = negativePoints
+    .slice(0, 3)
+    .map((p) => `<li>${p}</li>`)
+    .join("");
+
+  const win = window.open("", "_blank", "width=1100,height=850");
+  if (!win) return;
+
+  win.document.open();
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Stock Research Report - ${symbol}</title>
+        <meta charset="utf-8" />
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #111827;
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          body {
+            font-size: 10.5px;
+            line-height: 1.3;
+          }
+
+          .report {
+            width: 100%;
+            max-width: 190mm;
+            margin: 0 auto;
+            page-break-inside: avoid;
+          }
+
+          .header {
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+          }
+
+          .title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2px;
+          }
+
+          .subTitle {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2px;
+          }
+
+          .smallMuted {
+            font-size: 9.5px;
+            color: #64748b;
+          }
+
+          .metaGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+          }
+
+          .metaBox {
+            border: 1px solid #dbe4f0;
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: #f8fbff;
+            min-height: 44px;
+          }
+
+          .metaLabel {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 2px;
+          }
+
+          .metaValue {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+          }
+
+          .section {
+            margin-bottom: 8px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          .sectionTitle {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #dbe4f0;
+            padding-bottom: 2px;
+          }
+
+          .description {
+            border: 1px solid #dbe4f0;
+            border-radius: 6px;
+            padding: 7px 8px;
+            background: #fcfdff;
+            font-size: 10px;
+            line-height: 1.35;
+          }
+
+          .contentGrid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 8px;
+            align-items: start;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+
+          th, td {
+            border: 1px solid #dbe4f0;
+            padding: 4px 6px;
+            vertical-align: top;
+            word-wrap: break-word;
+          }
+
+          th {
+            background: #eef4ff;
+            color: #0f172a;
+            font-size: 10px;
+            text-align: left;
+          }
+
+          td {
+            font-size: 9.8px;
+          }
+
+          .scoreBox {
+            border: 1px solid #cfe0ff;
+            background: #eff6ff;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+          }
+
+          .scoreLabel {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            font-weight: 700;
+          }
+
+          .scoreValue {
+            font-size: 24px;
+            line-height: 1;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 4px 0 3px;
+          }
+
+          .scoreText {
+            font-size: 10px;
+            color: #1f2937;
+            line-height: 1.35;
+          }
+
+          .miniGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+
+          .listCard {
+            border: 1px solid #dbe4f0;
+            border-radius: 6px;
+            padding: 7px 8px;
+            background: #ffffff;
+          }
+
+          .listCard.positive {
+            background: #ecfdf5;
+            border-color: #bfe8d8;
+          }
+
+          .listCard.negative {
+            background: #fffbeb;
+            border-color: #f2dcc5;
+          }
+
+          .listTitle {
+            font-size: 10px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          ul {
+            margin: 0;
+            padding-left: 16px;
+          }
+
+          li {
+            margin: 0 0 3px 0;
+            font-size: 9.8px;
+            line-height: 1.3;
+          }
+
+          .footerNote {
+            margin-top: 6px;
+            font-size: 8.8px;
+            color: #64748b;
+            text-align: right;
+          }
+
+          @media print {
+            .report {
+              height: auto;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="report">
+          <div class="header">
+            <div class="title">Stock Research Report</div>
+            <div class="subTitle">${symbol} - ${companyName}</div>
+            <div class="smallMuted">Generated from Market Dashboard</div>
+          </div>
+
+          <div class="metaGrid">
+            <div class="metaBox">
+              <div class="metaLabel">Sector</div>
+              <div class="metaValue">${sector}</div>
+            </div>
+            <div class="metaBox">
+              <div class="metaLabel">Industry</div>
+              <div class="metaValue">${industry}</div>
+            </div>
+            <div class="metaBox">
+              <div class="metaLabel">CMP</div>
+              <div class="metaValue">${formatNumber(research?.overview?.cmp)}</div>
+            </div>
+            <div class="metaBox">
+              <div class="metaLabel">Overall Score</div>
+              <div class="metaValue">${overallScore ?? "-"}/100</div>
             </div>
           </div>
-        </body>
-      </html>
-    `);
 
-    win.document.close();
+          <div class="section">
+            <div class="sectionTitle">Business Profile</div>
+            <div class="description">${shortDescription}</div>
+          </div>
+
+          <div class="contentGrid">
+            <div class="section">
+              <div class="sectionTitle">Compact Metrics</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 62%;">Metric</th>
+                    <th style="width: 38%;">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <div class="scoreBox">
+                <div class="scoreLabel">Brokerage View</div>
+                <div class="scoreValue">${overallScore ?? "-"}</div>
+                <div class="scoreText">
+                  ${overallView}
+                </div>
+              </div>
+
+              <div class="miniGrid">
+                <div class="listCard positive">
+                  <div class="listTitle">Positive</div>
+                  <ul>${positivesHtml}</ul>
+                </div>
+
+                <div class="listCard negative">
+                  <div class="listTitle">Negative</div>
+                  <ul>${negativesHtml}</ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footerNote">
+            ${symbol} • Generated on ${new Date().toLocaleString()}
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+
+  setTimeout(() => {
     win.focus();
-
-    setTimeout(() => {
-      win.print();
-      win.close();
-    }, 500);
-  };
+    win.print();
+  }, 400);
+};
 
   const change = research?.overview?.change;
   const changePercent = research?.overview?.changePercent;
