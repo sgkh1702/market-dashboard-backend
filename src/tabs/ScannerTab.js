@@ -32,8 +32,8 @@ function ScannerTab() {
   const bullishEngulfing = useSheetRange("Copy", "L62:O82");
   const bearishEngulfing = useSheetRange("Copy", "P62:S82");
 
-  const high52W = useSheetRange("Copy", "B88:F108");
-  const low52W = useSheetRange("Copy", "G88:K108");
+  const high52W = useSheetRange("Copy", "G88:K108");
+  const low52W = useSheetRange("Copy", "B88:F108");
 
   const scannerConfig = useMemo(
     () => ({
@@ -54,8 +54,8 @@ function ScannerTab() {
       week52: {
         label: "52W High/Low",
         children: {
-          high52W: { label: "52W High", data: high52W },
           low52W: { label: "52W Low", data: low52W },
+          high52W: { label: "52W High", data: high52W },
         },
       },
       crossovers: {
