@@ -9,11 +9,9 @@ import {
   Paper,
   Autocomplete,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   useMediaQuery,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useTheme } from "@mui/material/styles";
@@ -26,7 +24,7 @@ const symbolFilterOptions = createFilterOptions({
 });
 
 const SUB_TABS = [
-  { value: "futures", label: "Futures" },
+  { value: "futures", label: "OI Spurts" },
   { value: "calls", label: "Calls" },
   { value: "puts", label: "Puts" },
   { value: "eod", label: "EOD" },
@@ -44,89 +42,34 @@ function FNOPulseTab() {
   const [selectedBearish, setSelectedBearish] = useState("");
   const [selectedFutureSymbol, setSelectedFutureSymbol] = useState(null);
   const [futureInputValue, setFutureInputValue] = useState("");
-  const [bullishInputValue, setBullishInputValue] = useState("");
-  const [bearishInputValue, setBearishInputValue] = useState("");
 
-  const timestampData = useSheetRange("Buildup", "B1");
-  const fallbackTimestampData = useSheetRange("Buildup", "B2");
-  const timestampValue =
-    (timestampData && timestampData[0]?.[0]) ||
-    (fallbackTimestampData && fallbackTimestampData[0]?.[0]) ||
-    "-";
+  const [mobileFuturesCard, setMobileFuturesCard] = useState("longBuildup");
+  const [mobileCallsCard, setMobileCallsCard] = useState("positiveCalls");
+  const [mobilePutsCard, setMobilePutsCard] = useState("positivePuts");
+  const [mobileEodCard, setMobileEodCard] = useState("longBuildup");
 
   const longBuildup = useSheetRange("Buildup", "A3:D13");
   const shortCovering = useSheetRange("Buildup", "A17:D27");
   const longUnwinding = useSheetRange("Buildup", "E3:H13");
   const shortBuildup = useSheetRange("Buildup", "E17:H27");
-  const maxOIChange = useSheetRange("Buildup", "I3:L13");
 
   const futuresLoading =
-    !longBuildup ||
-    !shortCovering ||
-    !longUnwinding ||
-    !shortBuildup ||
-    !maxOIChange;
+    !longBuildup || !shortCovering || !longUnwinding || !shortBuildup;
 
-  const callsTimestampData = useSheetRange("Options", "A2");
-  const callsTimestamp = (callsTimestampData && callsTimestampData[0]?.[0]) || "-";
   const callsRaw = useSheetRange("Options", "B1:L21");
-  const callsExpiry =
-    callsRaw && callsRaw.length > 1 ? callsRaw[1][1] || "-" : "-";
-
-  const callsHeaders = [
-    "Underlying",
-    "Type",
-    "Strike",
-    "Last Price",
-    "% Chg",
-    "OI",
-    "Underlying Value",
-  ];
-
+  const callsHeaders = ["Underlying", "Strike", "Last Price", "% Chg", "OI", "Underlying"];
   const callsRows =
     callsRaw && callsRaw.length > 1
-      ? callsRaw.slice(1).map((row) => [
-          row[0],
-          row[2],
-          row[3],
-          row[4],
-          row[5],
-          row[9],
-          row[10],
-        ])
+      ? callsRaw.slice(1).map((row) => [row[0], row[3], row[4], row[5], row[9], row[10]])
       : [];
-
   const callsLoading = !callsRaw;
 
-  const putsTimestampData = useSheetRange("Options", "A52");
-  const putsTimestamp = (putsTimestampData && putsTimestampData[0]?.[0]) || "-";
   const putsRaw = useSheetRange("Options", "B50:L70");
-  const putsExpiry =
-    putsRaw && putsRaw.length > 1 ? putsRaw[1][1] || "-" : "-";
-
-  const putsHeaders = [
-    "Underlying",
-    "Type",
-    "Strike",
-    "Last Price",
-    "% Chg",
-    "OI",
-    "Underlying Value",
-  ];
-
+  const putsHeaders = ["Underlying", "Strike", "Last Price", "% Chg", "OI", "Underlying"];
   const putsRows =
     putsRaw && putsRaw.length > 1
-      ? putsRaw.slice(1).map((row) => [
-          row[0],
-          row[2],
-          row[3],
-          row[4],
-          row[5],
-          row[9],
-          row[10],
-        ])
+      ? putsRaw.slice(1).map((row) => [row[0], row[3], row[4], row[5], row[9], row[10]])
       : [];
-
   const putsLoading = !putsRaw;
 
   const filterByChangeSign = (rows, colIdx, positive = true) =>
@@ -136,13 +79,10 @@ function FNOPulseTab() {
       return positive ? v > 0 : v < 0;
     });
 
-  const callsRowsPos = filterByChangeSign(callsRows, 4, true);
-  const callsRowsNeg = filterByChangeSign(callsRows, 4, false);
-  const putsRowsPos = filterByChangeSign(putsRows, 4, true);
-  const putsRowsNeg = filterByChangeSign(putsRows, 4, false);
-
-  const eodDateData = useSheetRange("Buildup", "A50");
-  const eodDate = (eodDateData && eodDateData[0]?.[0]) || "-";
+  const callsRowsPos = filterByChangeSign(callsRows, 3, true);
+  const callsRowsNeg = filterByChangeSign(callsRows, 3, false);
+  const putsRowsPos = filterByChangeSign(putsRows, 3, true);
+  const putsRowsNeg = filterByChangeSign(putsRows, 3, false);
 
   const eodLongBuildupRaw = useSheetRange("Buildup", "A53:D63");
   const eodShortBuildupRaw = useSheetRange("Buildup", "F53:I63");
@@ -156,9 +96,7 @@ function FNOPulseTab() {
     !eodLongUnwindingRaw;
 
   const toTable = (raw) =>
-    raw && raw.length > 0
-      ? { headers: raw[0], rows: raw.slice(1) }
-      : { headers: [], rows: [] };
+    raw && raw.length > 0 ? { headers: raw[0], rows: raw.slice(1) } : { headers: [], rows: [] };
 
   const eodLongBuildup = toTable(eodLongBuildupRaw);
   const eodShortBuildup = toTable(eodShortBuildupRaw);
@@ -177,8 +115,14 @@ function FNOPulseTab() {
   const bearishLoading = !bearishSymbolsRaw;
 
   const stockDataRaw = useSheetRange("StockData", "V1:AL7000");
-  const stockHeaders = stockDataRaw && stockDataRaw.length > 0 ? stockDataRaw[0] : [];
-  const stockRows = stockDataRaw && stockDataRaw.length > 1 ? stockDataRaw.slice(1) : [];
+  const stockHeaders = useMemo(
+    () => (stockDataRaw && stockDataRaw.length > 0 ? stockDataRaw[0] : []),
+    [stockDataRaw]
+  );
+  const stockRows = useMemo(
+    () => (stockDataRaw && stockDataRaw.length > 1 ? stockDataRaw.slice(1) : []),
+    [stockDataRaw]
+  );
   const stockDataLoading = !stockDataRaw;
 
   const stockIdx = {
@@ -191,41 +135,83 @@ function FNOPulseTab() {
     ltp: stockHeaders.indexOf("LTP") >= 0 ? stockHeaders.indexOf("LTP") : stockHeaders.indexOf("Ltp"),
   };
 
-  const mapChartRowsForSymbol = (symbol) => {
-    if (!symbol || !stockRows.length) return [];
-    if (
-      stockIdx.date < 0 ||
-      stockIdx.symbol < 0 ||
-      stockIdx.oi < 0 ||
-      stockIdx.buildup < 0 ||
-      stockIdx.maxCeStrike < 0 ||
-      stockIdx.maxPeStrike < 0
-    ) {
-      return [];
-    }
+  const mapChartRowsForSymbol = useMemo(
+    () => (symbol) => {
+      if (!symbol || !stockRows.length) return [];
+      if (
+        stockIdx.date < 0 ||
+        stockIdx.symbol < 0 ||
+        stockIdx.oi < 0 ||
+        stockIdx.buildup < 0 ||
+        stockIdx.maxCeStrike < 0 ||
+        stockIdx.maxPeStrike < 0
+      ) {
+        return [];
+      }
 
-    const rows = stockRows
-      .filter(
-        (r) =>
-          String(r[stockIdx.symbol] || "").trim().toUpperCase() ===
-          symbol.trim().toUpperCase()
-      )
-      .map((r) => ({
-        date: String(r[stockIdx.date] || "").trim(),
-        oi: Number(String(r[stockIdx.oi] || "").replace(/,/g, "")) || 0,
-        buildup: String(r[stockIdx.buildup] || "").trim(),
-        max_ce_strike:
-          Number(String(r[stockIdx.maxCeStrike] || "").replace(/,/g, "")) || 0,
-        max_pe_strike:
-          Number(String(r[stockIdx.maxPeStrike] || "").replace(/,/g, "")) || 0,
-        ltp:
-          stockIdx.ltp >= 0
-            ? Number(String(r[stockIdx.ltp] || "").replace(/,/g, "")) || 0
-            : 0,
-      }));
+      const parseTradeDate = (value) => {
+        if (!value) return null;
+        const str = String(value).trim();
 
-    return rows.slice(-10);
-  };
+        const ddmmyyyy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+        if (ddmmyyyy) {
+          const [, dd, mm, yyyy] = ddmmyyyy;
+          const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+          return Number.isNaN(d.getTime()) ? null : d;
+        }
+
+        const yyyymmdd = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+        if (yyyymmdd) {
+          const [, yyyy, mm, dd] = yyyymmdd;
+          const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+          return Number.isNaN(d.getTime()) ? null : d;
+        }
+
+        const parsed = new Date(str);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      };
+
+      const rows = stockRows
+        .filter(
+          (r) =>
+            String(r[stockIdx.symbol] || "").trim().toUpperCase() ===
+            symbol.trim().toUpperCase()
+        )
+        .map((r) => {
+          const rawDate = String(r[stockIdx.date] || "").trim();
+          const parsedDate = parseTradeDate(rawDate);
+
+          return {
+            date: rawDate,
+            parsedDate,
+            oi: Number(String(r[stockIdx.oi] || "").replace(/,/g, "")) || 0,
+            buildup: String(r[stockIdx.buildup] || "").trim(),
+            max_ce_strike:
+              Number(String(r[stockIdx.maxCeStrike] || "").replace(/,/g, "")) || 0,
+            max_pe_strike:
+              Number(String(r[stockIdx.maxPeStrike] || "").replace(/,/g, "")) || 0,
+            ltp:
+              stockIdx.ltp >= 0
+                ? Number(String(r[stockIdx.ltp] || "").replace(/,/g, "")) || 0
+                : 0,
+          };
+        })
+        .filter((r) => r.parsedDate)
+        .sort((a, b) => a.parsedDate - b.parsedDate);
+
+      return rows.slice(-10).map(({ parsedDate, ...rest }) => rest);
+    },
+    [
+      stockRows,
+      stockIdx.date,
+      stockIdx.symbol,
+      stockIdx.oi,
+      stockIdx.buildup,
+      stockIdx.maxCeStrike,
+      stockIdx.maxPeStrike,
+      stockIdx.ltp,
+    ]
+  );
 
   const allSymbols = useMemo(() => {
     if (!stockRows.length || stockIdx.symbol < 0) return [];
@@ -244,79 +230,138 @@ function FNOPulseTab() {
 
   const bullishChartRows = useMemo(
     () => mapChartRowsForSymbol(bullishSymbol),
-    [bullishSymbol, stockDataRaw]
+    [bullishSymbol, mapChartRowsForSymbol]
   );
 
   const bearishChartRows = useMemo(
     () => mapChartRowsForSymbol(bearishSymbol),
-    [bearishSymbol, stockDataRaw]
+    [bearishSymbol, mapChartRowsForSymbol]
   );
 
   const futureChartRows = useMemo(
     () => mapChartRowsForSymbol(futureSymbol),
-    [futureSymbol, stockDataRaw]
-  );
-
-  const SectionHeader = ({ title, meta }) => (
-    <Box
-      sx={{
-        mb: 2,
-        p: isMobile ? 1.5 : 2,
-        borderRadius: 2,
-        background: "#f7fafd",
-        border: "1px solid #dce6f2",
-      }}
-    >
-      <Typography sx={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#164a7b" }}>
-        {title}
-      </Typography>
-      {meta ? (
-        <Typography sx={{ mt: 0.5, fontSize: isMobile ? 13 : 14, color: "#64748b", fontWeight: 600 }}>
-          {meta}
-        </Typography>
-      ) : null}
-    </Box>
+    [futureSymbol, mapChartRowsForSymbol]
   );
 
   const TableBlock = ({ title, headers, rows }) => (
     <Paper
       elevation={0}
       sx={{
-        p: isMobile ? 1.25 : 1.75,
-        mb: 2,
+        border: "1px solid #dbe3ee",
         borderRadius: 2,
-        border: "1px solid #dde6f0",
-        overflow: "hidden",
+        p: 1.25,
+        backgroundColor: "#fff",
+        overflowX: "auto",
+        minWidth: 0,
       }}
     >
-      <Typography sx={{ fontWeight: 800, fontSize: isMobile ? 15 : 17, mb: 1.25, color: "#1e3a5f" }}>
+      <Typography sx={{ mb: 1, fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
         {title}
       </Typography>
-      <Box sx={{ width: "100%", overflowX: "auto" }}>
-        <Box sx={{ minWidth: isMobile ? 640 : "100%" }}>
-          <ProfessionalTable title="" headers={headers} rows={rows} />
-        </Box>
-      </Box>
+      <ProfessionalTable headers={headers} rows={rows} />
     </Paper>
   );
 
   const renderLoading = () => (
     <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-      <CircularProgress />
+      <CircularProgress size={22} />
+    </Box>
+  );
+
+  const segmentedGroupStyles = {
+    "& .MuiToggleButton-root": {
+      textTransform: "none",
+      fontWeight: 700,
+      borderColor: "#dbe3ee",
+      color: "#4b5563",
+      py: 0.8,
+      minWidth: 0,
+      flex: 1,
+      whiteSpace: "nowrap",
+    },
+    "& .Mui-selected": {
+      backgroundColor: "#e8f1fb",
+      color: "#1f6fb2 !important",
+    },
+  };
+
+  const renderMobileSelector = (label, value, onChange, options) => (
+    <Box sx={{ display: "grid", gap: 0.75, mb: 2 }}>
+      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700 }}>
+        {label}
+      </Typography>
+      <ToggleButtonGroup
+        exclusive
+        fullWidth
+        value={value}
+        onChange={(_, v) => v && onChange(v)}
+        size="small"
+        sx={{
+          display: "flex",
+          width: "100%",
+          gap: 0.75,
+          flexWrap: "nowrap",
+          ...segmentedGroupStyles,
+        }}
+      >
+        {options.map((opt) => (
+          <ToggleButton key={opt.value} value={opt.value}>
+            {opt.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
     </Box>
   );
 
   const renderFutures = () => {
     if (futuresLoading) return renderLoading();
 
-    return (
+    const futuresCards = {
+      longBuildup: {
+        title: "Long Buildup",
+        headers: longBuildup[0] || [],
+        rows: longBuildup.slice(1),
+      },
+      longUnwinding: {
+        title: "Long Unwinding",
+        headers: longUnwinding[0] || [],
+        rows: longUnwinding.slice(1),
+      },
+      shortCovering: {
+        title: "Short Covering",
+        headers: shortCovering[0] || [],
+        rows: shortCovering.slice(1),
+      },
+      shortBuildup: {
+        title: "Short Buildup",
+        headers: shortBuildup[0] || [],
+        rows: shortBuildup.slice(1),
+      },
+    };
+
+    const active = futuresCards[mobileFuturesCard];
+
+    return isMobile ? (
       <Box>
-        <SectionHeader title="Futures Buildup" meta={`Timestamp: ${timestampValue}`} />
-        <TableBlock title="Long Buildup" headers={longBuildup[0] || []} rows={longBuildup.slice(1)} />
-        <TableBlock title="Long Unwinding" headers={longUnwinding[0] || []} rows={longUnwinding.slice(1)} />
-        <TableBlock title="Max OI Change (5 min)" headers={maxOIChange[0] || []} rows={maxOIChange.slice(1)} />
-        <TableBlock title="Short Covering" headers={shortCovering[0] || []} rows={shortCovering.slice(1)} />
-        <TableBlock title="Short Buildup" headers={shortBuildup[0] || []} rows={shortBuildup.slice(1)} />
+        {renderMobileSelector("Choose card", mobileFuturesCard, setMobileFuturesCard, [
+          { value: "longBuildup", label: "Long Buildup" },
+          { value: "longUnwinding", label: "Long Unwinding" },
+          { value: "shortCovering", label: "Short Covering" },
+          { value: "shortBuildup", label: "Short Buildup" },
+        ])}
+        <TableBlock title={active.title} headers={active.headers} rows={active.rows} />
+      </Box>
+    ) : (
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
+          gap: 1.25,
+        }}
+      >
+        {Object.entries(futuresCards).map(([key, card]) => (
+          <TableBlock key={key} title={card.title} headers={card.headers} rows={card.rows} />
+        ))}
       </Box>
     );
   };
@@ -324,11 +369,25 @@ function FNOPulseTab() {
   const renderCalls = () => {
     if (callsLoading) return renderLoading();
 
-    return (
+    const callsCards = {
+      positiveCalls: { title: "Positive Calls", headers: callsHeaders, rows: callsRowsPos },
+      negativeCalls: { title: "Negative Calls", headers: callsHeaders, rows: callsRowsNeg },
+    };
+
+    const active = callsCards[mobileCallsCard];
+
+    return isMobile ? (
       <Box>
-        <SectionHeader title="Calls" meta={`Timestamp: ${callsTimestamp} | Expiry: ${callsExpiry}`} />
-        <TableBlock title="Positive Change Calls" headers={callsHeaders} rows={callsRowsPos} />
-        <TableBlock title="Negative Change Calls" headers={callsHeaders} rows={callsRowsNeg} />
+        {renderMobileSelector("Choose view", mobileCallsCard, setMobileCallsCard, [
+          { value: "positiveCalls", label: "Positive Calls" },
+          { value: "negativeCalls", label: "Negative Calls" },
+        ])}
+        <TableBlock title={active.title} headers={active.headers} rows={active.rows} />
+      </Box>
+    ) : (
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1.25 }}>
+        <TableBlock title="Positive Calls" headers={callsHeaders} rows={callsRowsPos} />
+        <TableBlock title="Negative Calls" headers={callsHeaders} rows={callsRowsNeg} />
       </Box>
     );
   };
@@ -336,11 +395,25 @@ function FNOPulseTab() {
   const renderPuts = () => {
     if (putsLoading) return renderLoading();
 
-    return (
+    const putsCards = {
+      positivePuts: { title: "Positive Puts", headers: putsHeaders, rows: putsRowsPos },
+      negativePuts: { title: "Negative Puts", headers: putsHeaders, rows: putsRowsNeg },
+    };
+
+    const active = putsCards[mobilePutsCard];
+
+    return isMobile ? (
       <Box>
-        <SectionHeader title="Puts" meta={`Timestamp: ${putsTimestamp} | Expiry: ${putsExpiry}`} />
-        <TableBlock title="Positive Change Puts" headers={putsHeaders} rows={putsRowsPos} />
-        <TableBlock title="Negative Change Puts" headers={putsHeaders} rows={putsRowsNeg} />
+        {renderMobileSelector("Choose view", mobilePutsCard, setMobilePutsCard, [
+          { value: "positivePuts", label: "Positive Puts" },
+          { value: "negativePuts", label: "Negative Puts" },
+        ])}
+        <TableBlock title={active.title} headers={active.headers} rows={active.rows} />
+      </Box>
+    ) : (
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1.25 }}>
+        <TableBlock title="Positive Puts" headers={putsHeaders} rows={putsRowsPos} />
+        <TableBlock title="Negative Puts" headers={putsHeaders} rows={putsRowsNeg} />
       </Box>
     );
   };
@@ -348,13 +421,36 @@ function FNOPulseTab() {
   const renderEod = () => {
     if (eodLoading) return renderLoading();
 
-    return (
+    const eodCards = {
+      longBuildup: { title: "Long Buildup", headers: eodLongBuildup.headers, rows: eodLongBuildup.rows },
+      shortBuildup: { title: "Short Buildup", headers: eodShortBuildup.headers, rows: eodShortBuildup.rows },
+      shortCovering: { title: "Short Covering", headers: eodShortCovering.headers, rows: eodShortCovering.rows },
+      longUnwinding: { title: "Long Unwinding", headers: eodLongUnwinding.headers, rows: eodLongUnwinding.rows },
+    };
+
+    const active = eodCards[mobileEodCard];
+
+    return isMobile ? (
       <Box>
-        <SectionHeader title="EOD Buildup" meta={`Date: ${eodDate}`} />
-        <TableBlock title="Long Buildup" headers={eodLongBuildup.headers} rows={eodLongBuildup.rows} />
-        <TableBlock title="Short Buildup" headers={eodShortBuildup.headers} rows={eodShortBuildup.rows} />
-        <TableBlock title="Short Covering" headers={eodShortCovering.headers} rows={eodShortCovering.rows} />
-        <TableBlock title="Long Unwinding" headers={eodLongUnwinding.headers} rows={eodLongUnwinding.rows} />
+        {renderMobileSelector("Choose card", mobileEodCard, setMobileEodCard, [
+          { value: "longBuildup", label: "Long Buildup" },
+          { value: "shortBuildup", label: "Short Buildup" },
+          { value: "shortCovering", label: "Short Covering" },
+          { value: "longUnwinding", label: "Long Unwinding" },
+        ])}
+        <TableBlock title={active.title} headers={active.headers} rows={active.rows} />
+      </Box>
+    ) : (
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
+          gap: 1.25,
+        }}
+      >
+        {Object.entries(eodCards).map(([key, card]) => (
+          <TableBlock key={key} title={card.title} headers={card.headers} rows={card.rows} />
+        ))}
       </Box>
     );
   };
@@ -363,63 +459,35 @@ function FNOPulseTab() {
     if (bullishLoading || stockDataLoading) return renderLoading();
 
     return (
-      <Box>
-        <SectionHeader title="Hot Stocks Bullish" meta={`Selected symbol: ${bullishSymbol || "-"}`} />
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: isMobile ? 1.25 : 1.5,
-            borderRadius: 2,
-            border: "1px solid #dde6f0",
-            mb: 2,
-          }}
-        >
-          <Autocomplete
-            options={bullishSymbols}
-            value={selectedBullish || bullishSymbols[0] || null}
-            inputValue={bullishInputValue}
-            onChange={(_, newValue) => {
-              setSelectedBullish(newValue || "");
-            }}
-            onInputChange={(_, newInputValue) => {
-              setBullishInputValue(newInputValue);
-            }}
-            filterOptions={symbolFilterOptions}
-            freeSolo={false}
-            autoHighlight
-            selectOnFocus
-            clearOnEscape
-            forcePopupIcon
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select bullish stock"
-                placeholder="Type symbol..."
-                fullWidth
-              />
-            )}
-          />
-        </Paper>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: isMobile ? 1.25 : 1.5,
-            borderRadius: 2,
-            border: "1px solid #dde6f0",
-            minWidth: 0,
-          }}
-        >
-          <Typography sx={{ fontWeight: 800, fontSize: isMobile ? 15 : 16, mb: 1 }}>
-            OI / Buildup Chart
-          </Typography>
-          <Box sx={{ width: "100%", overflowX: "auto" }}>
-            <Box sx={{ minWidth: isMobile ? 560 : "100%" }}>
-              <FnoPulseBarChart rows={bullishChartRows} symbol={bullishSymbol} />
+      <Box sx={{ display: "grid", gap: 2 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {bullishSymbols.map((symbol) => (
+            <Box
+              key={symbol}
+              onClick={() => setSelectedBullish(symbol)}
+              sx={{
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 2,
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: 13,
+                border: "1px solid #cfd8e3",
+                backgroundColor: bullishSymbol === symbol ? "#dbeafe" : "#fff",
+                color: bullishSymbol === symbol ? "#0f4c81" : "#334155",
+                "&:hover": {
+                  backgroundColor: bullishSymbol === symbol ? "#dbeafe" : "#f8fafc",
+                },
+              }}
+            >
+              {symbol}
             </Box>
-          </Box>
-        </Paper>
+          ))}
+        </Box>
+        <Typography variant="subtitle2" sx={{ color: "#0f172a", fontWeight: 700 }}>
+          OI / Buildup Chart
+        </Typography>
+        <FnoPulseBarChart rows={bullishChartRows} />
       </Box>
     );
   };
@@ -428,63 +496,35 @@ function FNOPulseTab() {
     if (bearishLoading || stockDataLoading) return renderLoading();
 
     return (
-      <Box>
-        <SectionHeader title="Hot Stocks Bearish" meta={`Selected symbol: ${bearishSymbol || "-"}`} />
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: isMobile ? 1.25 : 1.5,
-            borderRadius: 2,
-            border: "1px solid #dde6f0",
-            mb: 2,
-          }}
-        >
-          <Autocomplete
-            options={bearishSymbols}
-            value={selectedBearish || bearishSymbols[0] || null}
-            inputValue={bearishInputValue}
-            onChange={(_, newValue) => {
-              setSelectedBearish(newValue || "");
-            }}
-            onInputChange={(_, newInputValue) => {
-              setBearishInputValue(newInputValue);
-            }}
-            filterOptions={symbolFilterOptions}
-            freeSolo={false}
-            autoHighlight
-            selectOnFocus
-            clearOnEscape
-            forcePopupIcon
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select bearish stock"
-                placeholder="Type symbol..."
-                fullWidth
-              />
-            )}
-          />
-        </Paper>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: isMobile ? 1.25 : 1.5,
-            borderRadius: 2,
-            border: "1px solid #dde6f0",
-            minWidth: 0,
-          }}
-        >
-          <Typography sx={{ fontWeight: 800, fontSize: isMobile ? 15 : 16, mb: 1 }}>
-            OI / Buildup Chart
-          </Typography>
-          <Box sx={{ width: "100%", overflowX: "auto" }}>
-            <Box sx={{ minWidth: isMobile ? 560 : "100%" }}>
-              <FnoPulseBarChart rows={bearishChartRows} symbol={bearishSymbol} />
+      <Box sx={{ display: "grid", gap: 2 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {bearishSymbols.map((symbol) => (
+            <Box
+              key={symbol}
+              onClick={() => setSelectedBearish(symbol)}
+              sx={{
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 2,
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: 13,
+                border: "1px solid #cfd8e3",
+                backgroundColor: bearishSymbol === symbol ? "#fee2e2" : "#fff",
+                color: bearishSymbol === symbol ? "#991b1b" : "#334155",
+                "&:hover": {
+                  backgroundColor: bearishSymbol === symbol ? "#fee2e2" : "#f8fafc",
+                },
+              }}
+            >
+              {symbol}
             </Box>
-          </Box>
-        </Paper>
+          ))}
+        </Box>
+        <Typography variant="subtitle2" sx={{ color: "#0f172a", fontWeight: 700 }}>
+          OI / Buildup Chart
+        </Typography>
+        <FnoPulseBarChart rows={bearishChartRows} />
       </Box>
     );
   };
@@ -493,63 +533,25 @@ function FNOPulseTab() {
     if (stockDataLoading) return renderLoading();
 
     return (
-      <Box>
-        <SectionHeader title="Future Buildup" meta={`Selected symbol: ${futureSymbol || "-"}`} />
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: isMobile ? 1.25 : 1.5,
-            borderRadius: 2,
-            border: "1px solid #dde6f0",
-            mb: 2,
+      <Box sx={{ display: "grid", gap: 2 }}>
+        <Autocomplete
+          value={selectedFutureSymbol}
+          onChange={(_, newValue) => {
+            setSelectedFutureSymbol(newValue || "");
           }}
-        >
-          <Autocomplete
-            options={allSymbols}
-            value={selectedFutureSymbol}
-            inputValue={futureInputValue}
-            onChange={(_, newValue) => {
-              setSelectedFutureSymbol(newValue || "");
-            }}
-            onInputChange={(_, newInputValue) => {
-              setFutureInputValue(newInputValue);
-            }}
-            filterOptions={symbolFilterOptions}
-            freeSolo={false}
-            autoHighlight
-            selectOnFocus
-            clearOnEscape
-            forcePopupIcon
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select stock symbol"
-                placeholder="Type symbol..."
-                fullWidth
-              />
-            )}
-          />
-        </Paper>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: isMobile ? 1.25 : 1.5,
-            borderRadius: 2,
-            border: "1px solid #dde6f0",
-            minWidth: 0,
+          inputValue={futureInputValue}
+          onInputChange={(_, newInputValue) => {
+            setFutureInputValue(newInputValue);
           }}
-        >
-          <Typography sx={{ fontWeight: 800, fontSize: isMobile ? 15 : 16, mb: 1 }}>
-            OI / Buildup Chart
-          </Typography>
-          <Box sx={{ width: "100%", overflowX: "auto" }}>
-            <Box sx={{ minWidth: isMobile ? 560 : "100%" }}>
-              <FnoPulseBarChart rows={futureChartRows} symbol={futureSymbol} />
-            </Box>
-          </Box>
-        </Paper>
+          options={allSymbols}
+          filterOptions={symbolFilterOptions}
+          renderInput={(params) => <TextField {...params} label="Select Stock" size="small" />}
+          fullWidth
+        />
+        <Typography variant="subtitle2" sx={{ color: "#0f172a", fontWeight: 700 }}>
+          OI / Buildup Chart
+        </Typography>
+        <FnoPulseBarChart rows={futureChartRows} />
       </Box>
     );
   };
@@ -566,55 +568,33 @@ function FNOPulseTab() {
   };
 
   return (
-    <Box sx={{ width: "100%", minWidth: 0 }}>
-      <Box sx={{ mb: 2 }}>
-        {isMobile ? (
-          <FormControl fullWidth size="small">
-            <InputLabel id="fno-pulse-subtab-label">Choose view</InputLabel>
-            <Select
-              labelId="fno-pulse-subtab-label"
-              value={subTab}
-              label="Choose view"
-              onChange={(e) => setSubTab(e.target.value)}
-            >
-              {SUB_TABS.map((tab) => (
-                <MenuItem key={tab.value} value={tab.value}>
-                  {tab.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : (
-          <Tabs
-            value={subTab}
-            onChange={(_, v) => setSubTab(v)}
-            sx={{
-              mb: 2,
-              "& .MuiTabs-flexContainer": {
-                flexWrap: "wrap",
-                gap: 1,
-              },
-              "& .MuiTab-root": {
-                minHeight: 42,
-                fontSize: 15,
-                fontWeight: 700,
-                textTransform: "none",
-                borderRadius: "10px",
-                paddingInline: "14px",
-                alignItems: "center",
-              },
-            }}
-            textColor="primary"
-            indicatorColor="primary"
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            {SUB_TABS.map((tab) => (
-              <Tab key={tab.value} value={tab.value} label={tab.label} />
-            ))}
-          </Tabs>
-        )}
-      </Box>
+    <Box sx={{ mt: 1, minWidth: 0 }}>
+      <Tabs
+        value={subTab}
+        onChange={(_, v) => setSubTab(v)}
+        sx={{
+          mb: 2,
+          minHeight: 44,
+          "& .MuiTabs-flexContainer": { flexWrap: "wrap", gap: 1 },
+          "& .MuiTab-root": {
+            minHeight: 42,
+            fontSize: 15,
+            fontWeight: 700,
+            textTransform: "none",
+            borderRadius: "10px",
+            paddingInline: "14px",
+            alignItems: "center",
+          },
+        }}
+        textColor="primary"
+        indicatorColor="primary"
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        {SUB_TABS.map((tab) => (
+          <Tab key={tab.value} value={tab.value} label={tab.label} />
+        ))}
+      </Tabs>
 
       {renderActiveTab()}
     </Box>

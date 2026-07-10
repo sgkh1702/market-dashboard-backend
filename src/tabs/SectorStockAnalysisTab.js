@@ -54,8 +54,8 @@ export default function SectorStockAnalysisTab() {
           centered
           sx={{ ".MuiTab-root": { fontSize: 20, fontWeight: 700, minWidth: 180 } }}
         >
-          <Tab label="Sector Performance" />
-          <Tab label="Stock Performance" />
+          <Tab label="Sector" />
+          <Tab label="Stock" />
         </Tabs>
         {activeTab === 1 && (
           <Box sx={{ margin: "16px 0" }}>
