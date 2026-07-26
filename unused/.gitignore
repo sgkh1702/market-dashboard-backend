@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.env
+webpage-interface-59467c78ec92.json
